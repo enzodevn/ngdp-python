@@ -1,39 +1,39 @@
 # NGDP Python - Nordic Green Data Platform
 
-Projeto de Data Engineering desenvolvido em Python para análise de dados de produção de energia renovável.
+Data Engineering project developed in Python for the analysis of renewable energy production data.
 
-## Objetivo
+## Objective
 
-Processar, limpar e analisar dados energéticos, gerando indicadores e visualizações que apoiam estudos sobre sustentabilidade e produção de energia.
+To process, clean, and analyze energy data, generating indicators and visualizations that support studies on sustainability and energy production.
 
-## Tecnologias
+## Technologies
 
 * Python
 * Pandas
 * Matplotlib
 * Git & GitHub
 
-## Estrutura
+## Structure
 
-```text
-NGDP PYTHON/
+```text NGDP PYTHON/
 ├── data/
 ├── data_raw/
 ├── data_processed/
 ├── src/
 ├── main.py
 └── README.md
+
 ```
 
-## Funcionalidades
+## Functionalities
 
-* Limpeza e tratamento de dados
-* Processamento de informações energéticas
-* Geração de métricas
-* Criação de gráficos analíticos
-* Organização de datasets em pipeline
+* Data cleaning and processing
+* Energy information processing
+* Metrics generation
+* Creation of analytical graphs
+* Organizing datasets in a pipeline
 
-## Como executar
+## How to run
 
 ```bash
 git clone https://github.com/enzodevn/ngdp-python.git
@@ -44,10 +44,10 @@ pip install pandas matplotlib
 python main.py
 ```
 
-## Próximos Passos
+## Next Steps
 
 * SQLite
 * PostgreSQL
 * Streamlit Dashboard
-* Docker
+*Docker
 * Cloud Integration
