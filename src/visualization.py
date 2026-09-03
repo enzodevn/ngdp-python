@@ -34,10 +34,7 @@ def show_production_charts(df: pd.DataFrame) -> None:
 
     plot_production_history(
         df,
-        title=(
-            "Produção de energia na Noruega "
-            f"({first_year}–{last_year})"
-        ),
+        title=(f"Produção de energia na Noruega ({first_year}–{last_year})"),
     )
 
     recent_df = df[df["date"].dt.year >= 2015]

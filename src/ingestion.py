@@ -8,11 +8,12 @@ import math
 import os
 import re
 import tempfile
+from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -125,7 +126,9 @@ def _validate_table_metadata(
     if str(table.get("id")) != str(source_metadata["table_id"]):
         raise IngestionError("A API respondeu com uma tabela diferente da esperada.")
     if table.get("source") != source_metadata["provider"]:
-        raise IngestionError("O provedor retornado pela API não corresponde ao contrato.")
+        raise IngestionError(
+            "O provedor retornado pela API não corresponde ao contrato."
+        )
     if table.get("timeUnit") != "Monthly":
         raise IngestionError("A tabela oficial deixou de usar frequência mensal.")
     if table.get("variableNames") != [
@@ -179,15 +182,16 @@ def _parse_official_payload(
 
     periods = _ordered_category_codes(time_dimension)
     if not periods or any(
-        re.fullmatch(r"\d{4}M(0[1-9]|1[0-2])", period) is None
-        for period in periods
+        re.fullmatch(r"\d{4}M(0[1-9]|1[0-2])", period) is None for period in periods
     ):
         raise IngestionError("A API retornou períodos mensais inválidos.")
 
     size = payload.get("size")
     expected_size = [len(source_codes), 1, len(periods)]
     if size != expected_size:
-        raise IngestionError("O tamanho do dataset oficial não corresponde às dimensões.")
+        raise IngestionError(
+            "O tamanho do dataset oficial não corresponde às dimensões."
+        )
 
     values = payload.get("value")
     if not isinstance(values, list) or len(values) != math.prod(expected_size):
@@ -229,8 +233,10 @@ def _render_raw_csv(
     for source_index, source_code in enumerate(source_codes):
         row = [_quote_csv_text(f"{source_code} {source_labels[source_code]}")]
         start = source_index * period_count
-        for value in values[start : start + period_count]:
-            row.append(".." if value is None else str(value))
+        row.extend(
+            ".." if value is None else str(value)
+            for value in values[start : start + period_count]
+        )
         lines.append(";".join(row))
 
     return "\n".join(lines) + "\n"
@@ -307,7 +313,9 @@ def prepare_official_update(
     source_codes, source_labels, periods, values = _parse_official_payload(payload)
 
     if table.get("lastPeriod") != periods[-1]:
-        raise IngestionError("O período final dos metadados diverge do dataset oficial.")
+        raise IngestionError(
+            "O período final dos metadados diverge do dataset oficial."
+        )
 
     raw_text = _render_raw_csv(
         str(source_metadata["title"]),
@@ -320,10 +328,10 @@ def prepare_official_update(
     current = load_energy_data(processed_path)
     summary = compare_datasets(current, candidate)
 
-    collected_at = retrieved_at or datetime.now(timezone.utc)
+    collected_at = retrieved_at or datetime.now(UTC)
     if collected_at.tzinfo is None:
-        collected_at = collected_at.replace(tzinfo=timezone.utc)
-    collected_at = collected_at.astimezone(timezone.utc)
+        collected_at = collected_at.replace(tzinfo=UTC)
+    collected_at = collected_at.astimezone(UTC)
 
     updated_metadata = deepcopy(source_metadata)
     previous_hash = str(source_metadata["snapshot"]["raw_sha256"])
@@ -340,17 +348,20 @@ def prepare_official_update(
             "verified_on": collected_at.date().isoformat(),
             "source_table_period_end_on_verification": periods[-1],
             "source_updated_at": table.get("updated"),
-            "record_count": int(len(candidate)),
+            "record_count": len(candidate),
             "raw_sha256": new_hash,
             "previous_raw_sha256": previous_hash,
             "changes": asdict(summary),
         }
     )
-    metadata_text = json.dumps(
-        updated_metadata,
-        indent=2,
-        ensure_ascii=False,
-    ) + "\n"
+    metadata_text = (
+        json.dumps(
+            updated_metadata,
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n"
+    )
 
     return PreparedUpdate(
         raw_text=raw_text,
@@ -419,6 +430,8 @@ def apply_official_update(
                 _atomic_write(path, original)
             elif path.exists():
                 path.unlink()
-        raise IngestionError("A atualização falhou e os arquivos foram restaurados.") from exc
+        raise IngestionError(
+            "A atualização falhou e os arquivos foram restaurados."
+        ) from exc
 
     return update.summary

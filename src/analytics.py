@@ -53,6 +53,6 @@ def calculate_statistics(df: pd.DataFrame) -> EnergyStatistics:
         "latest_month_mwh": float(monthly_production.iloc[-1]),
         "period_start": monthly_production.index.min().strftime("%Y-%m"),
         "period_end": monthly_production.index.max().strftime("%Y-%m"),
-        "month_count": int(len(monthly_production)),
+        "month_count": len(monthly_production),
         "source_count": int(df["energy_source"].nunique()),
     }
