@@ -68,10 +68,15 @@ st.subheader("Norway Energy Dashboard")
 
 latest_date = df["date"].max()
 latest_period = f"{latest_date.month:02d}/{latest_date.year}"
+retrieved_on = str(source_metadata["snapshot"].get("retrieved_on") or "")
+retrieved_label = ""
+if len(retrieved_on) >= 10:
+    year, month, day = retrieved_on[:10].split("-")
+    retrieved_label = f" · Coletado em {day}/{month}/{year}"
 st.caption(
     f"Fonte: {source_metadata['provider']} · "
     f"Tabela {source_metadata['table_id']} · "
-    f"Snapshot disponível até {latest_period}."
+    f"Snapshot disponível até {latest_period}{retrieved_label}."
 )
 
 sources = sorted(df["energy_source"].unique())

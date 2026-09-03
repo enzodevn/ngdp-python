@@ -13,6 +13,8 @@ application, API or database.
 
 - Raw monthly electricity dataset for Norway.
 - Structured source provenance and snapshot integrity verification.
+- On-demand ingestion from the official Statistics Norway PxWebApi v2.
+- Read-only update checks and auditable source comparisons.
 - Raw-to-processed transformation with Pandas.
 - Validated long-format dataset.
 - Monthly production indicators with explicit aggregation semantics.
@@ -24,8 +26,8 @@ application, API or database.
 
 ### In development
 
-- Automated retrieval from the official API.
-- Snapshot update and revision comparison workflow.
+- Recurring refresh scheduling aligned with the official monthly release.
+- Deployment workflow that publishes a validated snapshot with the web app.
 
 ### Planned
 
@@ -45,6 +47,9 @@ application, API or database.
 
     data_raw/norway_energy_raw.csv
     data_raw/source.json
+                    |
+                    v
+          src/ingestion.py <----- Statistics Norway API
                     |
                     v
           provenance verification
@@ -69,6 +74,8 @@ Important modules:
 - src/data_cleaning.py: transformation of the raw wide table.
 - src/data_loading.py: processed-data validation and runtime normalization.
 - src/provenance.py: source metadata and raw snapshot integrity verification.
+- src/ingestion.py: official API download, schema validation, comparison and
+  recoverable snapshot update.
 - src/analytics.py: analytical calculations.
 - src/reporting.py: text report formatting and persistence.
 - src/visualization.py: CLI charts.
@@ -88,16 +95,15 @@ Electricity balance (MWh), by production and consumption, contents and month.
 
 Current processed dataset:
 
-- Period: January 1993 through January 2026.
+- Period: January 1993 through July 2026.
 - Frequency: monthly.
-- Rows: 1,192.
+- Rows: 1,216.
 - Columns: energy_source, date and production_mwh.
 - Sources: hydro, wind, solar and thermal power generation.
 
-The original snapshot download date was not recorded, so the structured source
-record represents it as `null` instead of inferring a date. On 3 September 2026,
-the official table was verified as updated through July 2026, while the local
-snapshot remains fixed at January 2026.
+The current snapshot was retrieved from the official API on 3 September 2026.
+Its source update timestamp, retrieval timestamp, period, row count, file hash
+and comparison with the previous snapshot are recorded in `data_raw/source.json`.
 
 The local file is a selected subset, not the complete electricity balance
 table. Source series also begin in different months. Full schema, indicator
@@ -135,6 +141,20 @@ report in one end-to-end run:
 
     python main.py --rebuild-data --no-charts
 
+Check the official source without changing local files:
+
+    python main.py --check-updates --no-charts
+
+Download, compare, validate and apply an official update before regenerating
+the analytical report:
+
+    python main.py --update-from-api --no-charts
+
+The update is rejected if the provider, table identity, dimensions, frequency,
+unit or selected series change. Unexpected removals also require manual review.
+The dashboard continues to read the validated local snapshot, so it remains
+available if the external API is temporarily unavailable.
+
 Run analytics and generate the report without opening charts:
 
     python main.py --no-charts
@@ -160,6 +180,8 @@ The tests cover:
 - raw-to-processed transformation;
 - canonical schema and data validation;
 - source metadata and snapshot fingerprint verification;
+- official API structure and update safety rules;
+- additions, revisions and removals between snapshots;
 - execution from a different working directory;
 - monthly aggregation semantics;
 - report generation;

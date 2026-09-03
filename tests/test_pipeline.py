@@ -18,8 +18,8 @@ def test_pipeline_generates_report_without_charts(tmp_path: Path) -> None:
     report = report_path.read_text(encoding="utf-8")
     assert saved_path == report_path
     assert "===== NGDP REPORT =====" in report
-    assert "Produção acumulada: 4449233092.00 MWh" in report
-    assert "Meses analisados: 397" in report
+    assert "Produção acumulada: 4519175624.00 MWh" in report
+    assert "Meses analisados: 403" in report
 
 
 def test_pipeline_rebuilds_processed_data_from_verified_snapshot(

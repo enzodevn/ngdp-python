@@ -3,7 +3,7 @@
   "table_id": "14091",
   "title": "Electricity balance (MWh), by production and consumption, contents and month",
   "table_url": "https://www.ssb.no/en/statbank/table/14091",
-  "api_url": "https://data.ssb.no/api/pxwebapi/v2/tables/14091?lang=en",
+  "api_url": "https://data.ssb.no/api/pxwebapi/v2/tables/14091",
   "unit": "MWh",
   "frequency": "monthly",
   "reference_period": "entire month",
@@ -14,13 +14,23 @@
   },
   "snapshot": {
     "file": "norway_energy_raw.csv",
-    "retrieved_on": null,
-    "retrieval_note": "The original download date was not recorded.",
+    "retrieved_on": "2026-09-03T19:33:28.948018Z",
+    "retrieval_note": "Retrieved by the NGDP ingestion pipeline from the official PxWebApi v2 endpoint.",
     "period_start": "1993M01",
-    "period_end": "2026M01",
+    "period_end": "2026M07",
     "verified_on": "2026-09-03",
     "source_table_period_end_on_verification": "2026M07",
-    "raw_sha256": "1349c2a73e6d79b6ef4cff91efc301882e3968eb300c8f7ee78a401f287ff76c"
+    "raw_sha256": "5a36450bad9e1482992b7cc0b8d14dbd5a45f2769c3dafa91b7e3b18eedb7d67",
+    "source_updated_at": "2026-08-14T06:00:00Z",
+    "record_count": 1216,
+    "previous_raw_sha256": "1349c2a73e6d79b6ef4cff91efc301882e3968eb300c8f7ee78a401f287ff76c",
+    "changes": {
+      "old_period_end": "2026M01",
+      "new_period_end": "2026M07",
+      "added_rows": 24,
+      "revised_rows": 0,
+      "removed_rows": 0
+    }
   },
   "selected_series": [
     "1.1 Hydro power generation",
@@ -36,9 +46,10 @@
     "Remove numeric hierarchy prefixes from source labels at runtime."
   ],
   "limitations": [
-    "The repository contains a fixed local snapshot and does not update automatically.",
+    "The dashboard reads a validated local snapshot instead of querying the API on every page load.",
     "The snapshot contains four generation series, not the complete electricity balance table.",
     "Series begin in different months because unavailable source values are excluded.",
-    "Statistics Norway may revise historical figures after this snapshot was downloaded."
+    "Statistics Norway may revise historical figures in future releases.",
+    "A recurring production schedule is not configured yet."
   ]
 }

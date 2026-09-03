@@ -12,7 +12,9 @@ def test_current_raw_snapshot_matches_recorded_fingerprint() -> None:
 
     assert metadata["provider"] == "Statistics Norway"
     assert metadata["table_id"] == "14091"
-    assert metadata["snapshot"]["retrieved_on"] is None
+    assert metadata["snapshot"]["retrieved_on"].endswith("Z")
+    assert metadata["snapshot"]["period_end"] == "2026M07"
+    assert metadata["snapshot"]["record_count"] == 1216
 
 
 def test_validate_raw_snapshot_rejects_changed_file(tmp_path: Path) -> None:
