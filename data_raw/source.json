@@ -1,0 +1,44 @@
+{
+  "provider": "Statistics Norway",
+  "table_id": "14091",
+  "title": "Electricity balance (MWh), by production and consumption, contents and month",
+  "table_url": "https://www.ssb.no/en/statbank/table/14091",
+  "api_url": "https://data.ssb.no/api/pxwebapi/v2/tables/14091?lang=en",
+  "unit": "MWh",
+  "frequency": "monthly",
+  "reference_period": "entire month",
+  "license": {
+    "identifier": "CC BY 4.0",
+    "name": "Creative Commons Attribution 4.0 International",
+    "url": "https://www.ssb.no/en/diverse/lisens"
+  },
+  "snapshot": {
+    "file": "norway_energy_raw.csv",
+    "retrieved_on": null,
+    "retrieval_note": "The original download date was not recorded.",
+    "period_start": "1993M01",
+    "period_end": "2026M01",
+    "verified_on": "2026-09-03",
+    "source_table_period_end_on_verification": "2026M07",
+    "raw_sha256": "1349c2a73e6d79b6ef4cff91efc301882e3968eb300c8f7ee78a401f287ff76c"
+  },
+  "selected_series": [
+    "1.1 Hydro power generation",
+    "1.2 Wind power generation",
+    "1.3 Solar power generation",
+    "1.4 Thermal power generation"
+  ],
+  "missing_value_marker": "..",
+  "transformations": [
+    "Reshape monthly columns from wide to long format.",
+    "Exclude cells marked as unavailable with two dots.",
+    "Normalize monthly periods to timestamps at runtime.",
+    "Remove numeric hierarchy prefixes from source labels at runtime."
+  ],
+  "limitations": [
+    "The repository contains a fixed local snapshot and does not update automatically.",
+    "The snapshot contains four generation series, not the complete electricity balance table.",
+    "Series begin in different months because unavailable source values are excluded.",
+    "Statistics Norway may revise historical figures after this snapshot was downloaded."
+  ]
+}

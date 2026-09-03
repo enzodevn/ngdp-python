@@ -6,27 +6,53 @@ import pandas as pd
 
 
 class EnergyStatistics(TypedDict):
-    """Summary statistics generated from production observations."""
+    """Monthly production indicators generated from canonical data."""
 
-    total: float
-    media: float
-    maximo: float
-    minimo: float
+    total_mwh: float
+    monthly_average_mwh: float
+    monthly_peak_mwh: float
+    monthly_minimum_mwh: float
+    latest_month_mwh: float
+    period_start: str
+    period_end: str
+    month_count: int
+    source_count: int
 
 
 def calculate_statistics(df: pd.DataFrame) -> EnergyStatistics:
-    """Calculate production statistics for a non-empty DataFrame."""
+    """Calculate period and monthly indicators for a non-empty DataFrame.
 
-    if "production_mwh" not in df.columns:
-        raise ValueError("Coluna obrigatória ausente: production_mwh")
+    When more than one energy source is present, values are summed by month
+    before monthly averages and extrema are calculated. This prevents a row
+    average from being presented as a monthly production indicator.
+    """
+
+    required_columns = {"date", "energy_source", "production_mwh"}
+    missing_columns = required_columns.difference(df.columns)
+    if missing_columns:
+        missing = ", ".join(sorted(missing_columns))
+        raise ValueError(f"Colunas obrigatórias ausentes: {missing}")
 
     if df.empty:
         raise ValueError("Não é possível calcular estatísticas de dados vazios.")
 
-    production = df["production_mwh"]
+    dates = pd.to_datetime(df["date"], errors="raise")
+    production = pd.to_numeric(df["production_mwh"], errors="raise")
+    monthly_production = (
+        pd.DataFrame({"date": dates, "production_mwh": production})
+        .groupby("date")["production_mwh"]
+        .sum()
+        .sort_index()
+    )
+
     return {
-        "total": float(production.sum()),
-        "media": float(production.mean()),
-        "maximo": float(production.max()),
-        "minimo": float(production.min()),
+        "total_mwh": float(monthly_production.sum()),
+        "monthly_average_mwh": float(monthly_production.mean()),
+        "monthly_peak_mwh": float(monthly_production.max()),
+        "monthly_minimum_mwh": float(monthly_production.min()),
+        "latest_month_mwh": float(monthly_production.iloc[-1]),
+        "period_start": monthly_production.index.min().strftime("%Y-%m"),
+        "period_end": monthly_production.index.max().strftime("%Y-%m"),
+        "month_count": int(len(monthly_production)),
+        "source_count": int(df["energy_source"].nunique()),
     }

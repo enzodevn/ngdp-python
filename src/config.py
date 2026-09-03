@@ -6,6 +6,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 RAW_DATA_PATH = PROJECT_ROOT / "data_raw" / "norway_energy_raw.csv"
+SOURCE_METADATA_PATH = PROJECT_ROOT / "data_raw" / "source.json"
 PROCESSED_DATA_PATH = (
     PROJECT_ROOT / "data_processed" / "norway_energy_cleaned.csv"
 )

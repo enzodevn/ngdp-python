@@ -5,9 +5,11 @@ import streamlit as st
 try:
     from .analytics import calculate_statistics
     from .data_loading import EnergyDataError, load_energy_data
+    from .provenance import SourceMetadataError, load_source_metadata
 except ImportError:  # Streamlit executes this file as a script.
     from analytics import calculate_statistics
     from data_loading import EnergyDataError, load_energy_data
+    from provenance import SourceMetadataError, load_source_metadata
 
 
 st.set_page_config(
@@ -22,6 +24,13 @@ def load_dashboard_data():
     """Load validated energy data once per Streamlit cache cycle."""
 
     return load_energy_data()
+
+
+@st.cache_data
+def load_dashboard_source():
+    """Load the structured source record once per Streamlit cache cycle."""
+
+    return load_source_metadata()
 
 
 def format_compact_mwh(value: float) -> str:
@@ -48,7 +57,8 @@ def format_exact_mwh(value: float) -> str:
 
 try:
     df = load_dashboard_data()
-except (FileNotFoundError, EnergyDataError) as exc:
+    source_metadata = load_dashboard_source()
+except (FileNotFoundError, EnergyDataError, SourceMetadataError) as exc:
     st.error(f"Não foi possível carregar os dados: {exc}")
     st.stop()
 
@@ -58,7 +68,11 @@ st.subheader("Norway Energy Dashboard")
 
 latest_date = df["date"].max()
 latest_period = f"{latest_date.month:02d}/{latest_date.year}"
-st.caption(f"Dados disponíveis até {latest_period}.")
+st.caption(
+    f"Fonte: {source_metadata['provider']} · "
+    f"Tabela {source_metadata['table_id']} · "
+    f"Snapshot disponível até {latest_period}."
+)
 
 sources = sorted(df["energy_source"].unique())
 selected_source = st.selectbox(
@@ -82,29 +96,35 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric(
         "Produção total",
-        format_compact_mwh(stats["total"]),
-        help=f"Valor exato: {format_exact_mwh(stats['total'])}",
+        format_compact_mwh(stats["total_mwh"]),
+        help=f"Valor exato: {format_exact_mwh(stats['total_mwh'])}",
     )
 
 with col2:
     st.metric(
         "Média mensal",
-        format_compact_mwh(stats["media"]),
-        help=f"Valor exato: {format_exact_mwh(stats['media'])}",
+        format_compact_mwh(stats["monthly_average_mwh"]),
+        help=(
+            "Média calculada após consolidar os valores de cada mês. "
+            f"Valor exato: {format_exact_mwh(stats['monthly_average_mwh'])}"
+        ),
     )
 
 with col3:
     st.metric(
         "Máximo mensal",
-        format_compact_mwh(stats["maximo"]),
-        help=f"Valor exato: {format_exact_mwh(stats['maximo'])}",
+        format_compact_mwh(stats["monthly_peak_mwh"]),
+        help=f"Valor exato: {format_exact_mwh(stats['monthly_peak_mwh'])}",
     )
 
 with col4:
     st.metric(
-        "Mínimo mensal",
-        format_compact_mwh(stats["minimo"]),
-        help=f"Valor exato: {format_exact_mwh(stats['minimo'])}",
+        "Mês mais recente",
+        format_compact_mwh(stats["latest_month_mwh"]),
+        help=(
+            f"Período: {stats['period_end']}. "
+            f"Valor exato: {format_exact_mwh(stats['latest_month_mwh'])}"
+        ),
     )
 
 st.subheader(f"Histórico de produção — {selected_source}")

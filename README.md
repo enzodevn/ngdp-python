@@ -12,9 +12,10 @@ application, API or database.
 ### Implemented
 
 - Raw monthly electricity dataset for Norway.
+- Structured source provenance and snapshot integrity verification.
 - Raw-to-processed transformation with Pandas.
 - Validated long-format dataset.
-- Production summary statistics.
+- Monthly production indicators with explicit aggregation semantics.
 - Text report generation.
 - Matplotlib and Seaborn charts.
 - Data-backed Streamlit dashboard prototype.
@@ -23,8 +24,8 @@ application, API or database.
 
 ### In development
 
-- Consolidation of the command-line and dashboard workflows.
-- Data provenance and freshness documentation.
+- Automated retrieval from the official API.
+- Snapshot update and revision comparison workflow.
 
 ### Planned
 
@@ -43,6 +44,10 @@ application, API or database.
 ## Architecture
 
     data_raw/norway_energy_raw.csv
+    data_raw/source.json
+                    |
+                    v
+          provenance verification
                     |
                     v
             src/data_cleaning.py
@@ -63,6 +68,7 @@ Important modules:
 - src/config.py: canonical project paths.
 - src/data_cleaning.py: transformation of the raw wide table.
 - src/data_loading.py: processed-data validation and runtime normalization.
+- src/provenance.py: source metadata and raw snapshot integrity verification.
 - src/analytics.py: analytical calculations.
 - src/reporting.py: text report formatting and persistence.
 - src/visualization.py: CLI charts.
@@ -74,6 +80,12 @@ Important modules:
 The raw file identifies itself as Statistics Norway table 14091:
 Electricity balance (MWh), by production and consumption, contents and month.
 
+- Official table: https://www.ssb.no/en/statbank/table/14091
+- Official API metadata:
+  https://data.ssb.no/api/pxwebapi/v2/tables/14091?lang=en
+- Licence: Creative Commons Attribution 4.0 International (CC BY 4.0).
+- Licence terms: https://www.ssb.no/en/diverse/lisens
+
 Current processed dataset:
 
 - Period: January 1993 through January 2026.
@@ -82,8 +94,20 @@ Current processed dataset:
 - Columns: energy_source, date and production_mwh.
 - Sources: hydro, wind, solar and thermal power generation.
 
-The repository still needs the original download URL, retrieval date, license
-and known dataset limitations documented before automated ingestion is added.
+The original snapshot download date was not recorded, so the structured source
+record represents it as `null` instead of inferring a date. On 3 September 2026,
+the official table was verified as updated through July 2026, while the local
+snapshot remains fixed at January 2026.
+
+The local file is a selected subset, not the complete electricity balance
+table. Source series also begin in different months. Full schema, indicator
+definitions, transformations and limitations are documented in
+`docs/data-contract.md`; machine-readable provenance is stored in
+`data_raw/source.json`.
+
+The CLI and dashboard use the same indicator semantics. Data is consolidated
+by month before the monthly average, peak and minimum are calculated. This
+avoids presenting a mean across source rows as if it were a monthly total.
 
 ## Requirements
 
@@ -102,9 +126,14 @@ that no longer exists. New environments should use .venv.
 
 ## Running the project
 
-Regenerate the processed dataset:
+Rebuild the processed dataset directly:
 
     python -m src.data_cleaning
+
+Verify the source fingerprint, rebuild the processed dataset and generate the
+report in one end-to-end run:
+
+    python main.py --rebuild-data --no-charts
 
 Run analytics and generate the report without opening charts:
 
@@ -130,10 +159,12 @@ The tests cover:
 
 - raw-to-processed transformation;
 - canonical schema and data validation;
+- source metadata and snapshot fingerprint verification;
 - execution from a different working directory;
-- analytical statistics;
+- monthly aggregation semantics;
 - report generation;
-- pipeline integration without graphical windows.
+- pipeline integration, including an end-to-end rebuild, without graphical
+  windows.
 
 ## Legacy files
 
