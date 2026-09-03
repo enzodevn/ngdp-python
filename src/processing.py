@@ -1,3 +1,10 @@
+"""Legacy calculations for the six-row sample in data/energy_data.csv.
+
+This module expects a daily dataset containing a region column and is not
+compatible with the canonical monthly Statistics Norway dataset. It remains
+unchanged during Sprint 01 so its educational history is preserved.
+"""
+
 import csv
 
 # Carrega os dados do CSV

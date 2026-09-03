@@ -1,7 +1,7 @@
-def main():
-    print("NGDP environment ready 🚀")
-    print("Python + venv configured successfully")
+"""Canonical command-line entry point for NGDP."""
+
+from src.main import main
+
 
 if __name__ == "__main__":
     main()
-
