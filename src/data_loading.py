@@ -1,5 +1,6 @@
 """Load and validate the canonical processed energy dataset."""
 
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -44,9 +45,6 @@ def load_energy_data(
     if df[list(REQUIRED_COLUMNS)].isna().any().any():
         raise EnergyDataError("O dataset contém valores ausentes.")
 
-    if df.duplicated(subset=["energy_source", "date"]).any():
-        raise EnergyDataError("O dataset contém fontes e períodos duplicados.")
-
     try:
         df["production_mwh"] = pd.to_numeric(
             df["production_mwh"],
@@ -59,6 +57,9 @@ def load_energy_data(
 
     if (df["production_mwh"] < 0).any():
         raise EnergyDataError("A coluna production_mwh contém valores negativos.")
+
+    if not df["production_mwh"].map(math.isfinite).all():
+        raise EnergyDataError("A coluna production_mwh contém valores infinitos.")
 
     try:
         df["date"] = pd.to_datetime(
@@ -75,6 +76,13 @@ def load_energy_data(
         df["energy_source"]
         .astype("string")
         .str.replace(SOURCE_PREFIX_PATTERN, "", regex=True)
+        .str.strip()
     )
+
+    if df["energy_source"].eq("").any():
+        raise EnergyDataError("A coluna energy_source contém fontes vazias.")
+
+    if df.duplicated(subset=["energy_source", "date"]).any():
+        raise EnergyDataError("O dataset contém fontes e períodos duplicados.")
 
     return df.sort_values(["date", "energy_source"]).reset_index(drop=True)

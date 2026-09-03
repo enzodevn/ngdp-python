@@ -15,10 +15,17 @@ def generate_report(stats: EnergyStatistics) -> str:
 
     return (
         "===== NGDP REPORT =====\n\n"
-        f"Produção Total: {stats['total']:.2f} MWh\n"
-        f"Produção Média por Registro: {stats['media']:.2f} MWh\n"
-        f"Produção Máxima por Registro: {stats['maximo']:.2f} MWh\n"
-        f"Produção Mínima por Registro: {stats['minimo']:.2f} MWh\n"
+        f"Período: {stats['period_start']} a {stats['period_end']}\n"
+        f"Meses analisados: {stats['month_count']}\n"
+        f"Fontes analisadas: {stats['source_count']}\n\n"
+        f"Produção acumulada: {stats['total_mwh']:.2f} MWh\n"
+        "Produção média mensal combinada: "
+        f"{stats['monthly_average_mwh']:.2f} MWh\n"
+        f"Pico mensal combinado: {stats['monthly_peak_mwh']:.2f} MWh\n"
+        "Mínimo mensal combinado: "
+        f"{stats['monthly_minimum_mwh']:.2f} MWh\n"
+        "Produção no mês mais recente: "
+        f"{stats['latest_month_mwh']:.2f} MWh\n"
     )
 
 

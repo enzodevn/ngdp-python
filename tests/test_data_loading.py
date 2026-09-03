@@ -52,3 +52,33 @@ def test_load_energy_data_rejects_duplicate_periods(tmp_path: Path) -> None:
 
     with pytest.raises(EnergyDataError, match="duplicados"):
         load_energy_data(invalid_path)
+
+
+def test_load_energy_data_rejects_duplicates_after_normalization(
+    tmp_path: Path,
+) -> None:
+    invalid_path = tmp_path / "normalized-duplicates.csv"
+    pd.DataFrame(
+        {
+            "energy_source": ["1.1 Hydro", "2.1 Hydro"],
+            "date": ["2025M01", "2025M01"],
+            "production_mwh": [100, 110],
+        }
+    ).to_csv(invalid_path, index=False)
+
+    with pytest.raises(EnergyDataError, match="duplicados"):
+        load_energy_data(invalid_path)
+
+
+def test_load_energy_data_rejects_infinite_values(tmp_path: Path) -> None:
+    invalid_path = tmp_path / "infinite.csv"
+    pd.DataFrame(
+        {
+            "energy_source": ["1.1 Hydro"],
+            "date": ["2025M01"],
+            "production_mwh": [float("inf")],
+        }
+    ).to_csv(invalid_path, index=False)
+
+    with pytest.raises(EnergyDataError, match="infinitos"):
+        load_energy_data(invalid_path)
