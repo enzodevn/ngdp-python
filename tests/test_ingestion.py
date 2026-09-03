@@ -2,9 +2,10 @@
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from collections.abc import Mapping
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -20,7 +21,6 @@ from src.ingestion import (
     prepare_official_update,
 )
 
-
 SOURCE_LABELS = {
     "1.1": "Hydro power generation",
     "1.2": "Wind power generation",
@@ -30,10 +30,10 @@ SOURCE_LABELS = {
 
 
 def _raw_csv(periods: list[str], values: list[list[int]]) -> str:
-    header = ["\"production and consumption\""]
+    header = ['"production and consumption"']
     header.extend(f'"Electricity power {period}"' for period in periods)
     lines = ['"Example electricity table"', ";".join(header)]
-    for (code, label), row_values in zip(SOURCE_LABELS.items(), values):
+    for (code, label), row_values in zip(SOURCE_LABELS.items(), values, strict=True):
         lines.append(
             ";".join([f'"{code} {label}"', *[str(value) for value in row_values]])
         )
@@ -149,7 +149,7 @@ def test_prepare_and_apply_official_update(tmp_path: Path) -> None:
         processed_path=processed_path,
         metadata_path=metadata_path,
         json_loader=fake_loader,
-        retrieved_at=datetime(2025, 3, 2, 12, 0, tzinfo=timezone.utc),
+        retrieved_at=datetime(2025, 3, 2, 12, 0, tzinfo=UTC),
     )
 
     assert prepared.summary == UpdateSummary(

@@ -24,6 +24,7 @@ application, API or database.
 - Matplotlib and Seaborn charts.
 - Data-backed Streamlit dashboard prototype.
 - Automated tests for cleaning, loading, analytics and reporting.
+- Continuous quality gate for Python 3.11 and 3.12 on pull requests and `main`.
 - Reproducible Python environment through the versioned requirements contract.
 
 ### In development
@@ -128,6 +129,10 @@ Create a clean environment from the project root:
     python -m pip install --upgrade pip
     python -m pip install -r requirements.txt
 
+For development and local quality checks, install the additional pinned tools:
+
+    python -m pip install -r requirements-dev.txt
+
 The existing venv directory is legacy and may reference a Python installation
 that no longer exists. New environments should use .venv.
 
@@ -184,7 +189,18 @@ The generated canonical report is written to outputs/ngdp_report.txt.
 
 ## Tests
 
-Run the test suite from the project root:
+Run the complete local quality gate from the project root:
+
+    python -m ruff check .
+    python -m ruff format --check .
+    python -c "from src.provenance import validate_raw_snapshot; validate_raw_snapshot()"
+    python -m pytest
+
+The same checks run automatically for pull requests and updates to `main`.
+The compatibility suite executes on Python 3.11 and 3.12, while workflow
+definitions are validated independently.
+
+To run only the test suite:
 
     python -m pytest
 

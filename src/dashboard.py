@@ -140,9 +140,7 @@ if len(df_filtered) > 1:
         y="production_mwh",
     )
 else:
-    st.info(
-        "Existe apenas um período disponível para esta combinação de filtros."
-    )
+    st.info("Existe apenas um período disponível para esta combinação de filtros.")
 
 st.subheader("Dados filtrados")
 st.dataframe(df_filtered, width="stretch", hide_index=True)
