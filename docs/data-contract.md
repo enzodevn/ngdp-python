@@ -41,6 +41,11 @@ validates the table identity and schema, compares source-month observations and
 only then replaces the local raw and processed snapshots. Additions and
 revisions are recorded. Unexpected removals stop the update for manual review.
 
+The scheduled workflow checks the source every day at 08:17 in the
+`Europe/Oslo` time zone. An unchanged source produces no commit. A validated
+change is isolated in `automation/ssb-data-update`, tested and proposed through
+a pull request; the workflow does not update `main` directly.
+
 ## Canonical processed schema
 
 `data_processed/norway_energy_cleaned.csv` contains one source-month observation
@@ -78,5 +83,5 @@ source's value. This makes CLI and dashboard indicators use the same semantics.
 - Availability differs by technology, so early consolidated months include
   fewer active series than recent months.
 - Official historical values can be revised after the snapshot date.
-- A recurring production schedule is not configured yet; updates currently run
-  through the command-line workflow.
+- Scheduled verification depends on the availability of GitHub Actions and the
+  official Statistics Norway API; failed runs require operational review.

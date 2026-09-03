@@ -15,6 +15,8 @@ application, API or database.
 - Structured source provenance and snapshot integrity verification.
 - On-demand ingestion from the official Statistics Norway PxWebApi v2.
 - Read-only update checks and auditable source comparisons.
+- Daily source verification that proposes validated changes through a review
+  pull request.
 - Raw-to-processed transformation with Pandas.
 - Validated long-format dataset.
 - Monthly production indicators with explicit aggregation semantics.
@@ -26,7 +28,6 @@ application, API or database.
 
 ### In development
 
-- Recurring refresh scheduling aligned with the official monthly release.
 - Deployment workflow that publishes a validated snapshot with the web app.
 
 ### Planned
@@ -154,6 +155,18 @@ The update is rejected if the provider, table identity, dimensions, frequency,
 unit or selected series change. Unexpected removals also require manual review.
 The dashboard continues to read the validated local snapshot, so it remains
 available if the external API is temporarily unavailable.
+
+### Automated source refresh
+
+The GitHub Actions workflow in `.github/workflows/refresh-ssb-data.yml` checks
+the official source every day at 08:17 in the `Europe/Oslo` time zone. It can
+also be started manually from the Actions page.
+
+If the official snapshot is unchanged, the workflow finishes without creating
+a commit. When validated additions or revisions are found, it runs the complete
+test suite and opens or updates a pull request from
+`automation/ssb-data-update`. The workflow never writes directly to `main`, so
+every official data update remains subject to human review.
 
 Run analytics and generate the report without opening charts:
 
