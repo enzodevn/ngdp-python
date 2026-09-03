@@ -13,6 +13,8 @@ except ImportError:  # Supports direct execution from the src directory.
 def clean_energy_data(
     raw_file: str | Path = RAW_DATA_PATH,
     output_file: str | Path = PROCESSED_DATA_PATH,
+    *,
+    verbose: bool = True,
 ) -> pd.DataFrame:
     """Clean the wide raw CSV and persist the canonical processed dataset."""
 
@@ -59,8 +61,9 @@ def clean_energy_data(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_path, index=False)
 
-    print(f"Dataset limpo salvo em: {output_path}")
-    print(f"Registros processados: {len(df)}")
+    if verbose:
+        print(f"Dataset limpo salvo em: {output_path}")
+        print(f"Registros processados: {len(df)}")
     return df
 
 

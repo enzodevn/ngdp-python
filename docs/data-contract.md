@@ -17,13 +17,14 @@ Source links:
 - API metadata: https://data.ssb.no/api/pxwebapi/v2/tables/14091?lang=en
 - Licence: https://www.ssb.no/en/diverse/lisens
 
-Machine-readable provenance is stored in `data_raw/source.json`. The original
-download date was not recorded and is intentionally represented as `null`.
-The file fingerprint protects the recorded snapshot from silent replacement.
+Machine-readable provenance is stored in `data_raw/source.json`. The current
+retrieval timestamp, official update timestamp and differences from the prior
+snapshot are recorded there. The file fingerprint protects the recorded
+snapshot from silent replacement.
 
 ## Raw snapshot
 
-`data_raw/norway_energy_raw.csv` is an immutable input snapshot with four
+`data_raw/norway_energy_raw.csv` is a versioned input snapshot with four
 selected generation series:
 
 - hydro power generation;
@@ -31,9 +32,14 @@ selected generation series:
 - solar power generation;
 - thermal power generation.
 
-Its period runs from 1993M01 through 2026M01. A cell containing `..` means the
-source did not publish a usable value for that series and month; these cells
-are excluded during transformation.
+Its current period runs from 1993M01 through 2026M07. A cell containing `..`
+means the source did not publish a usable value for that series and month;
+these cells are excluded during transformation.
+
+The ingestion pipeline requests all four series from the official PxWebApi v2,
+validates the table identity and schema, compares source-month observations and
+only then replaces the local raw and processed snapshots. Additions and
+revisions are recorded. Unexpected removals stop the update for manual review.
 
 ## Canonical processed schema
 
@@ -66,9 +72,11 @@ source's value. This makes CLI and dashboard indicators use the same semantics.
 
 ## Known limitations
 
-- The local snapshot is not a live API connection.
+- The dashboard reads a validated local snapshot rather than querying the API
+  on every page load.
 - It represents four generation series, not all 26 categories in table 14091.
 - Availability differs by technology, so early consolidated months include
   fewer active series than recent months.
 - Official historical values can be revised after the snapshot date.
-- The original retrieval date cannot be reconstructed reliably.
+- A recurring production schedule is not configured yet; updates currently run
+  through the command-line workflow.

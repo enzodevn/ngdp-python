@@ -13,6 +13,11 @@ try:
     )
     from .data_cleaning import clean_energy_data
     from .data_loading import load_energy_data
+    from .ingestion import (
+        UpdateSummary,
+        apply_official_update,
+        prepare_official_update,
+    )
     from .provenance import validate_raw_snapshot
     from .reporting import generate_report, save_report
 except ImportError:  # Supports direct execution from the src directory.
@@ -25,6 +30,11 @@ except ImportError:  # Supports direct execution from the src directory.
     )
     from data_cleaning import clean_energy_data
     from data_loading import load_energy_data
+    from ingestion import (
+        UpdateSummary,
+        apply_official_update,
+        prepare_official_update,
+    )
     from provenance import validate_raw_snapshot
     from reporting import generate_report, save_report
 
@@ -36,11 +46,25 @@ def run_pipeline(
     data_path: str | Path = PROCESSED_DATA_PATH,
     report_path: str | Path = REPORT_PATH,
     rebuild_data: bool = False,
+    update_from_api: bool = False,
     show_charts: bool = True,
 ) -> Path:
     """Run transformation, loading, analytics, reporting and visualization."""
 
-    if rebuild_data:
+    if update_from_api:
+        prepared_update = prepare_official_update(
+            raw_path=raw_data_path,
+            processed_path=data_path,
+            metadata_path=source_metadata_path,
+        )
+        print_update_summary(prepared_update.summary)
+        apply_official_update(
+            prepared_update,
+            raw_path=raw_data_path,
+            processed_path=data_path,
+            metadata_path=source_metadata_path,
+        )
+    elif rebuild_data:
         validate_raw_snapshot(raw_data_path, source_metadata_path)
         clean_energy_data(raw_data_path, data_path)
 
@@ -61,6 +85,19 @@ def run_pipeline(
         show_production_charts(df)
 
     return saved_report
+
+
+def print_update_summary(summary: UpdateSummary) -> None:
+    """Print an auditable summary of differences found in the official data."""
+
+    print("===== NGDP SOURCE UPDATE =====")
+    print(f"Período local: {summary.old_period_end}")
+    print(f"Período oficial: {summary.new_period_end}")
+    print(f"Novas observações: {summary.added_rows}")
+    print(f"Revisões oficiais: {summary.revised_rows}")
+    print(f"Remoções detectadas: {summary.removed_rows}")
+    if not summary.changed:
+        print("O snapshot local já está atualizado.")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -93,10 +130,21 @@ def build_parser() -> argparse.ArgumentParser:
         default=REPORT_PATH,
         help="Caminho de saída do relatório.",
     )
-    parser.add_argument(
+    source_action = parser.add_mutually_exclusive_group()
+    source_action.add_argument(
         "--rebuild-data",
         action="store_true",
         help="Reconstrói o CSV processado a partir do snapshot bruto.",
+    )
+    source_action.add_argument(
+        "--check-updates",
+        action="store_true",
+        help="Consulta a fonte oficial e mostra diferenças sem alterar arquivos.",
+    )
+    source_action.add_argument(
+        "--update-from-api",
+        action="store_true",
+        help="Atualiza e valida o snapshot usando a API oficial.",
     )
     parser.add_argument(
         "--no-charts",
@@ -110,12 +158,22 @@ def main() -> None:
     """Execute the NGDP command-line interface."""
 
     args = build_parser().parse_args()
+    if args.check_updates:
+        prepared_update = prepare_official_update(
+            raw_path=args.raw_data,
+            processed_path=args.data,
+            metadata_path=args.source_metadata,
+        )
+        print_update_summary(prepared_update.summary)
+        return
+
     run_pipeline(
         raw_data_path=args.raw_data,
         source_metadata_path=args.source_metadata,
         data_path=args.data,
         report_path=args.report,
         rebuild_data=args.rebuild_data,
+        update_from_api=args.update_from_api,
         show_charts=not args.no_charts,
     )
 

@@ -11,9 +11,9 @@ from src.data_loading import EnergyDataError, load_energy_data
 def test_load_current_dataset() -> None:
     df = load_energy_data()
 
-    assert len(df) == 1192
+    assert len(df) == 1216
     assert df["date"].min() == pd.Timestamp("1993-01-01")
-    assert df["date"].max() == pd.Timestamp("2026-01-01")
+    assert df["date"].max() == pd.Timestamp("2026-07-01")
     assert set(df["energy_source"]) == {
         "Hydro power generation",
         "Wind power generation",
@@ -29,7 +29,7 @@ def test_default_path_does_not_depend_on_current_directory(
 ) -> None:
     monkeypatch.chdir(tmp_path)
 
-    assert len(load_energy_data()) == 1192
+    assert len(load_energy_data()) == 1216
 
 
 def test_load_energy_data_rejects_missing_columns(tmp_path: Path) -> None:
