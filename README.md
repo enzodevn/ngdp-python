@@ -4,8 +4,8 @@ Energy data platform focused on Norwegian electricity production, data
 engineering and sustainability.
 
 The NGDP is a NEXUS system and is being developed incrementally. The current
-stage consolidates the Python data core before introducing a dedicated web
-application, API or database.
+stage connects the validated Python data core to NGDP Web V1 while keeping the
+future API and database layers deliberately separate.
 
 ## Current status
 
@@ -22,7 +22,9 @@ application, API or database.
 - Monthly production indicators with explicit aggregation semantics.
 - Text report generation.
 - Matplotlib and Seaborn charts.
-- Data-backed Streamlit dashboard prototype.
+- Interactive and responsive NGDP Web V1 dashboard.
+- Compact production, energy-mix and source-contribution visualizations.
+- Dataset filtering, provenance evidence and reduced-motion support.
 - Automated tests for cleaning, loading, analytics and reporting.
 - Continuous quality gate for Python 3.11 and 3.12 on pull requests and `main`.
 - Reproducible Python environment through the versioned requirements contract.
@@ -33,7 +35,6 @@ application, API or database.
 
 ### Planned
 
-- NGDP Web V1.
 - Structured backend API when the interface requires it.
 - Database persistence when CSV no longer meets the use case.
 - Logging and operational observability.
@@ -68,7 +69,7 @@ application, API or database.
        main.py        src/dashboard.py
           |                   |
           v                   v
-    analytics/report     Streamlit UI
+    analytics/report     presenter + Web V1
 
 Important modules:
 
@@ -82,7 +83,9 @@ Important modules:
 - src/reporting.py: text report formatting and persistence.
 - src/visualization.py: CLI charts.
 - src/main.py: pipeline orchestration and command-line arguments.
-- src/dashboard.py: current Streamlit interface.
+- src/dashboard_presenter.py: testable filters and dashboard calculations.
+- src/dashboard.py: interactive NGDP Web V1 composition.
+- assets/dashboard.css: responsive NEXUS-aligned visual system and motion.
 
 ## Dataset
 
@@ -185,6 +188,11 @@ Start the Streamlit dashboard:
 
     python -m streamlit run src/dashboard.py
 
+Use the sidebar to combine energy sources and change the year window. The
+metrics, trend, energy mix, source totals and evidence table update together.
+The interface reads only the validated local snapshot and links back to the
+official source table.
+
 The generated canonical report is written to outputs/ngdp_report.txt.
 
 ## Tests
@@ -213,6 +221,7 @@ The tests cover:
 - additions, revisions and removals between snapshots;
 - execution from a different working directory;
 - monthly aggregation semantics;
+- dashboard filters, source summaries, latest mix and renewable share;
 - report generation;
 - pipeline integration, including an end-to-end rebuild, without graphical
   windows.

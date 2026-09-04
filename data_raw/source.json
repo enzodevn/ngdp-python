@@ -49,7 +49,6 @@
     "The dashboard reads a validated local snapshot instead of querying the API on every page load.",
     "The snapshot contains four generation series, not the complete electricity balance table.",
     "Series begin in different months because unavailable source values are excluded.",
-    "Statistics Norway may revise historical figures in future releases.",
-    "A recurring production schedule is not configured yet."
+    "Statistics Norway may revise historical figures in future releases."
   ]
 }
