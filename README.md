@@ -4,8 +4,8 @@ Energy data platform focused on Norwegian electricity production, data
 engineering and sustainability.
 
 The NGDP is a NEXUS system and is being developed incrementally. The current
-stage connects the validated Python data core to NGDP Web V1 while keeping the
-future API and database layers deliberately separate.
+stage connects the validated Python data core to NGDP Web V1 and introduces a
+versioned PostgreSQL foundation without making the interface depend on it.
 
 ## Current status
 
@@ -28,15 +28,17 @@ future API and database layers deliberately separate.
 - Automated tests for cleaning, loading, analytics and reporting.
 - Continuous quality gate for Python 3.11 and 3.12 on pull requests and `main`.
 - Reproducible Python environment through the versioned requirements contract.
+- Versioned PostgreSQL schema with source, snapshot, dimension and fact tables.
+- Transactional and idempotent synchronization of validated snapshots.
+- PostgreSQL integration test with a dedicated CI database.
 
 ### In development
 
-- Deployment workflow that publishes a validated snapshot with the web app.
+- Controlled adoption of PostgreSQL by analytical consumers.
 
 ### Planned
 
 - Structured backend API when the interface requires it.
-- Database persistence when CSV no longer meets the use case.
 - Logging and operational observability.
 
 ### Research
@@ -63,13 +65,13 @@ future API and database layers deliberately separate.
                     v
     data_processed/norway_energy_cleaned.csv
                     |
-          +---------+---------+
-          |                   |
-          v                   v
-       main.py        src/dashboard.py
-          |                   |
-          v                   v
-    analytics/report     presenter + Web V1
+          +---------+----------------+----------------+
+          |                          |                |
+          v                          v                v
+       main.py               src/dashboard.py    PostgreSQL
+          |                          |                |
+          v                          v                v
+    analytics/report          presenter + Web V1  history + SQL
 
 Important modules:
 
@@ -83,6 +85,7 @@ Important modules:
 - src/reporting.py: text report formatting and persistence.
 - src/visualization.py: CLI charts.
 - src/main.py: pipeline orchestration and command-line arguments.
+- src/database.py: migrations and transactional snapshot synchronization.
 - src/dashboard_presenter.py: testable filters and dashboard calculations.
 - src/dashboard.py: interactive NGDP Web V1 composition.
 - assets/dashboard.css: responsive NEXUS-aligned visual system and motion.
@@ -123,6 +126,7 @@ avoids presenting a mean across source rows as if it were a monthly total.
 ## Requirements
 
 - Python 3.11 or newer.
+- PostgreSQL 17 for the optional database path.
 - Windows PowerShell examples are shown below.
 
 Create a clean environment from the project root:
@@ -163,6 +167,15 @@ The update is rejected if the provider, table identity, dimensions, frequency,
 unit or selected series change. Unexpected removals also require manual review.
 The dashboard continues to read the validated local snapshot, so it remains
 available if the external API is temporarily unavailable.
+
+Apply pending migrations and synchronize the current validated snapshot:
+
+    $env:NGDP_DATABASE_URL = "postgresql://ngdp:your-password@localhost:5432/ngdp"
+    python main.py --sync-database --no-charts
+
+The database URL exists only in the process environment. `.env.example` is a
+credential-free reference; local `.env` files remain ignored. The full model,
+migration contract and adoption gate are documented in `docs/database.md`.
 
 ### Automated source refresh
 
@@ -225,6 +238,8 @@ The tests cover:
 - report generation;
 - pipeline integration, including an end-to-end rebuild, without graphical
   windows.
+- PostgreSQL settings, migration discovery and snapshot preparation;
+- idempotent relational loading against PostgreSQL in the dedicated CI job.
 
 ## Legacy files
 
