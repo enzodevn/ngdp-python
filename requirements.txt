@@ -1,4 +1,5 @@
 pandas==3.0.1
+psycopg[binary]==3.3.5
 altair==6.2.2
 matplotlib==3.10.8
 seaborn==0.13.2

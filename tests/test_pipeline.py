@@ -3,6 +3,9 @@
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from src.main import run_pipeline
 
@@ -80,3 +83,41 @@ def test_pipeline_rebuilds_processed_data_from_verified_snapshot(
     assert saved_path == report_path
     assert processed_path.is_file()
     assert "Produção média mensal combinada: 130.00 MWh" in report
+
+
+def test_pipeline_synchronizes_validated_data_with_postgresql(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    report_path = tmp_path / "report.txt"
+    calls: dict[str, object] = {}
+
+    class FakeConnection:
+        def __enter__(self) -> object:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+    connection = FakeConnection()
+
+    def fake_synchronize(
+        active_connection: object,
+        **paths: object,
+    ) -> SimpleNamespace:
+        calls["connection"] = active_connection
+        calls["paths"] = paths
+        return SimpleNamespace(observation_count=1216, snapshot_id=7)
+
+    monkeypatch.setattr("src.main.connect_database", lambda: connection)
+    monkeypatch.setattr("src.main.synchronize_current_snapshot", fake_synchronize)
+
+    run_pipeline(
+        report_path=report_path,
+        sync_database=True,
+        show_charts=False,
+    )
+
+    assert calls["connection"] is connection
+    assert calls["paths"]
+    assert report_path.is_file()

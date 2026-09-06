@@ -14,4 +14,7 @@ PROCESSED_DATA_PATH = PROJECT_ROOT / "data_processed" / "norway_energy_cleaned.c
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 REPORT_PATH = OUTPUTS_DIR / "ngdp_report.txt"
 
+DATABASE_DIR = PROJECT_ROOT / "database"
+DATABASE_MIGRATIONS_DIR = DATABASE_DIR / "migrations"
+
 LEGACY_DATA_PATH = PROJECT_ROOT / "data" / "energy_data.csv"

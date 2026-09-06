@@ -13,6 +13,7 @@ try:
     )
     from .data_cleaning import clean_energy_data
     from .data_loading import load_energy_data
+    from .database import connect_database, synchronize_current_snapshot
     from .ingestion import (
         UpdateSummary,
         apply_official_update,
@@ -30,6 +31,7 @@ except ImportError:  # Supports direct execution from the src directory.
     )
     from data_cleaning import clean_energy_data
     from data_loading import load_energy_data
+    from database import connect_database, synchronize_current_snapshot
     from ingestion import (
         UpdateSummary,
         apply_official_update,
@@ -47,6 +49,7 @@ def run_pipeline(
     report_path: str | Path = REPORT_PATH,
     rebuild_data: bool = False,
     update_from_api: bool = False,
+    sync_database: bool = False,
     show_charts: bool = True,
 ) -> Path:
     """Run transformation, loading, analytics, reporting and visualization."""
@@ -69,6 +72,21 @@ def run_pipeline(
         clean_energy_data(raw_data_path, data_path)
 
     df = load_energy_data(data_path)
+
+    if sync_database:
+        with connect_database() as connection:
+            sync_result = synchronize_current_snapshot(
+                connection,
+                raw_path=raw_data_path,
+                data_path=data_path,
+                metadata_path=source_metadata_path,
+            )
+        print(
+            "PostgreSQL sincronizado: "
+            f"{sync_result.observation_count} observações, "
+            f"snapshot {sync_result.snapshot_id}."
+        )
+
     stats = calculate_statistics(df)
     report = generate_report(stats)
     saved_report = save_report(report, report_path)
@@ -147,6 +165,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Atualiza e valida o snapshot usando a API oficial.",
     )
     parser.add_argument(
+        "--sync-database",
+        action="store_true",
+        help="Aplica migrations e sincroniza o snapshot com o PostgreSQL.",
+    )
+    parser.add_argument(
         "--no-charts",
         action="store_true",
         help="Executa o pipeline sem abrir gráficos.",
@@ -174,6 +197,7 @@ def main() -> None:
         report_path=args.report,
         rebuild_data=args.rebuild_data,
         update_from_api=args.update_from_api,
+        sync_database=args.sync_database,
         show_charts=not args.no_charts,
     )
 
