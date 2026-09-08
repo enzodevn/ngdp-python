@@ -5,9 +5,11 @@ from decimal import Decimal
 
 import pytest
 
+from src.data_access import load_analytical_data
 from src.database import (
     DatabaseSettings,
     connect_database,
+    load_current_generation,
     synchronize_current_snapshot,
 )
 
@@ -64,3 +66,27 @@ def test_current_snapshot_is_loaded_idempotently() -> None:
     assert total_mwh == Decimal("4519175624.000")
     assert period_start.isoformat() == "1993-01-01"
     assert period_end.isoformat() == "2026-07-01"
+
+
+def test_postgresql_passes_the_analytical_adoption_gate() -> None:
+    settings = DatabaseSettings.from_url(TEST_DATABASE_URL or "")
+
+    with connect_database(settings) as connection:
+        synchronize_current_snapshot(connection)
+        database_data = load_current_generation(
+            connection,
+            provider="Statistics Norway",
+            table_id="14091",
+        )
+
+    result = load_analytical_data(
+        backend="postgresql",
+        settings=settings,
+    )
+
+    assert len(database_data) == 1216
+    assert result.backend == "postgresql"
+    assert result.parity is not None
+    assert result.parity.record_count == 1216
+    assert result.parity.source_count == 4
+    assert result.parity.production_mwh_total == Decimal("4519175624")

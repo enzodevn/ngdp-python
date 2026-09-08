@@ -13,6 +13,7 @@ except ImportError:  # Supports direct execution from the src directory.
 
 REQUIRED_COLUMNS = {"energy_source", "date", "production_mwh"}
 SOURCE_PREFIX_PATTERN = r"^\d+\.\d+\s+"
+MONTH_VALUE_PATTERN = r"^\d{4}M(?:0[1-9]|1[0-2])$"
 
 
 class EnergyDataError(ValueError):
@@ -32,7 +33,13 @@ def load_energy_data(
     if not path.is_file():
         raise FileNotFoundError(f"Dataset processado não encontrado: {path}")
 
-    df = pd.read_csv(path)
+    return validate_energy_data_frame(pd.read_csv(path))
+
+
+def validate_energy_data_frame(data: pd.DataFrame) -> pd.DataFrame:
+    """Validate and normalize energy data from any trusted storage adapter."""
+
+    df = data.copy()
 
     missing_columns = REQUIRED_COLUMNS.difference(df.columns)
     if missing_columns:
@@ -62,15 +69,18 @@ def load_energy_data(
         raise EnergyDataError("A coluna production_mwh contém valores infinitos.")
 
     try:
-        df["date"] = pd.to_datetime(
-            df["date"],
-            format="%YM%m",
-            errors="raise",
-        )
+        date_text = df["date"].astype("string").str.strip()
+        if date_text.str.fullmatch(MONTH_VALUE_PATTERN).all():
+            df["date"] = pd.to_datetime(date_text, format="%YM%m", errors="raise")
+        else:
+            df["date"] = pd.to_datetime(df["date"], errors="raise")
     except (TypeError, ValueError) as exc:
         raise EnergyDataError(
-            "A coluna date deve usar o formato mensal YYYYMmm, como 2025M01."
+            "A coluna date deve conter períodos mensais válidos."
         ) from exc
+
+    if not df["date"].dt.day.eq(1).all():
+        raise EnergyDataError("A coluna date deve usar o primeiro dia de cada mês.")
 
     df["energy_source"] = (
         df["energy_source"]

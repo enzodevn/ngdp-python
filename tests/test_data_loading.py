@@ -5,7 +5,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.data_loading import EnergyDataError, load_energy_data
+from src.data_loading import (
+    EnergyDataError,
+    load_energy_data,
+    validate_energy_data_frame,
+)
 
 
 def test_load_current_dataset() -> None:
@@ -82,3 +86,30 @@ def test_load_energy_data_rejects_infinite_values(tmp_path: Path) -> None:
 
     with pytest.raises(EnergyDataError, match="infinitos"):
         load_energy_data(invalid_path)
+
+
+def test_validate_energy_data_frame_accepts_database_dates() -> None:
+    data = pd.DataFrame(
+        {
+            "energy_source": ["Hydro power generation"],
+            "date": [pd.Timestamp("2025-01-01").date()],
+            "production_mwh": [100],
+        }
+    )
+
+    validated = validate_energy_data_frame(data)
+
+    assert validated.loc[0, "date"] == pd.Timestamp("2025-01-01")
+
+
+def test_validate_energy_data_frame_rejects_non_month_start() -> None:
+    data = pd.DataFrame(
+        {
+            "energy_source": ["Hydro power generation"],
+            "date": ["2025-01-02"],
+            "production_mwh": [100],
+        }
+    )
+
+    with pytest.raises(EnergyDataError, match="primeiro dia"):
+        validate_energy_data_frame(data)
