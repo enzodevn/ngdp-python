@@ -11,8 +11,8 @@ try:
         REPORT_PATH,
         SOURCE_METADATA_PATH,
     )
+    from .data_access import load_analytical_data
     from .data_cleaning import clean_energy_data
-    from .data_loading import load_energy_data
     from .database import connect_database, synchronize_current_snapshot
     from .ingestion import (
         UpdateSummary,
@@ -29,8 +29,8 @@ except ImportError:  # Supports direct execution from the src directory.
         REPORT_PATH,
         SOURCE_METADATA_PATH,
     )
+    from data_access import load_analytical_data
     from data_cleaning import clean_energy_data
-    from data_loading import load_energy_data
     from database import connect_database, synchronize_current_snapshot
     from ingestion import (
         UpdateSummary,
@@ -50,6 +50,7 @@ def run_pipeline(
     rebuild_data: bool = False,
     update_from_api: bool = False,
     sync_database: bool = False,
+    data_backend: str | None = None,
     show_charts: bool = True,
 ) -> Path:
     """Run transformation, loading, analytics, reporting and visualization."""
@@ -71,8 +72,6 @@ def run_pipeline(
         validate_raw_snapshot(raw_data_path, source_metadata_path)
         clean_energy_data(raw_data_path, data_path)
 
-    df = load_energy_data(data_path)
-
     if sync_database:
         with connect_database() as connection:
             sync_result = synchronize_current_snapshot(
@@ -85,6 +84,21 @@ def run_pipeline(
             "PostgreSQL sincronizado: "
             f"{sync_result.observation_count} observações, "
             f"snapshot {sync_result.snapshot_id}."
+        )
+
+    data_result = load_analytical_data(
+        backend=data_backend,
+        data_path=data_path,
+        raw_path=raw_data_path,
+        metadata_path=source_metadata_path,
+    )
+    df = data_result.data
+    if data_result.parity is None:
+        print("Fonte analítica: CSV canônico.")
+    else:
+        print(
+            "Fonte analítica: PostgreSQL com paridade verificada "
+            f"({data_result.parity.processed_sha256[:12]}…)."
         )
 
     stats = calculate_statistics(df)
@@ -170,6 +184,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Aplica migrations e sincroniza o snapshot com o PostgreSQL.",
     )
     parser.add_argument(
+        "--data-backend",
+        choices=("csv", "postgresql"),
+        default=None,
+        help=(
+            "Seleciona a fonte analítica. O padrão é CSV ou o valor de "
+            "NGDP_DATA_BACKEND."
+        ),
+    )
+    parser.add_argument(
         "--no-charts",
         action="store_true",
         help="Executa o pipeline sem abrir gráficos.",
@@ -198,6 +221,7 @@ def main() -> None:
         rebuild_data=args.rebuild_data,
         update_from_api=args.update_from_api,
         sync_database=args.sync_database,
+        data_backend=args.data_backend,
         show_charts=not args.no_charts,
     )
 

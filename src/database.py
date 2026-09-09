@@ -22,7 +22,11 @@ try:
         RAW_DATA_PATH,
         SOURCE_METADATA_PATH,
     )
-    from .data_loading import load_energy_data
+    from .data_loading import (
+        EnergyDataError,
+        load_energy_data,
+        validate_energy_data_frame,
+    )
     from .provenance import validate_raw_snapshot
 except ImportError:  # Supports direct execution from the src directory.
     from config import (
@@ -31,7 +35,11 @@ except ImportError:  # Supports direct execution from the src directory.
         RAW_DATA_PATH,
         SOURCE_METADATA_PATH,
     )
-    from data_loading import load_energy_data
+    from data_loading import (
+        EnergyDataError,
+        load_energy_data,
+        validate_energy_data_frame,
+    )
     from provenance import validate_raw_snapshot
 
 
@@ -50,6 +58,10 @@ class DatabaseMigrationError(RuntimeError):
 
 class DatabaseSyncError(RuntimeError):
     """Raised when a validated snapshot cannot be synchronized safely."""
+
+
+class DatabaseReadError(RuntimeError):
+    """Raised when the current analytical snapshot cannot be read safely."""
 
 
 @dataclass(frozen=True)
@@ -221,6 +233,46 @@ def connect_database(settings: DatabaseSettings | None = None) -> Any:
         ) from exc
 
     return psycopg.connect(active_settings.url)
+
+
+def load_current_generation(
+    connection: Any,
+    *,
+    provider: str,
+    table_id: str,
+) -> pd.DataFrame:
+    """Read and validate the latest snapshot for one official dataset."""
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+                SELECT
+                    energy_source,
+                    period_start,
+                    production_mwh
+                FROM ngdp.current_generation
+                WHERE provider = %s AND table_id = %s
+                ORDER BY period_start, energy_source
+            """,
+            (provider, table_id),
+        )
+        rows = cursor.fetchall()
+
+    if not rows:
+        raise DatabaseReadError(
+            "O PostgreSQL não contém um snapshot atual para a fonte solicitada."
+        )
+
+    data = pd.DataFrame(
+        rows,
+        columns=["energy_source", "date", "production_mwh"],
+    )
+    try:
+        return validate_energy_data_frame(data)
+    except EnergyDataError as exc:
+        raise DatabaseReadError(
+            "O snapshot atual do PostgreSQL não satisfaz o contrato analítico."
+        ) from exc
 
 
 def apply_migrations(

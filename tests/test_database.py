@@ -1,6 +1,10 @@
 """Unit tests for the NGDP PostgreSQL foundation."""
 
+from __future__ import annotations
+
 import copy
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -9,12 +13,45 @@ from src.data_loading import load_energy_data
 from src.database import (
     DatabaseConfigurationError,
     DatabaseMigrationError,
+    DatabaseReadError,
     DatabaseSettings,
     DatabaseSyncError,
     discover_migrations,
+    load_current_generation,
     prepare_database_snapshot,
 )
 from src.provenance import load_source_metadata
+
+
+class StubCursor:
+    """Minimal cursor used to exercise the PostgreSQL read adapter."""
+
+    def __init__(self, rows: list[tuple[object, ...]]) -> None:
+        self.rows = rows
+        self.parameters: tuple[str, str] | None = None
+
+    def __enter__(self) -> StubCursor:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+    def execute(self, statement: str, parameters: tuple[str, str]) -> None:
+        assert "ngdp.current_generation" in statement
+        self.parameters = parameters
+
+    def fetchall(self) -> list[tuple[object, ...]]:
+        return self.rows
+
+
+class StubConnection:
+    """Minimal connection exposing one reusable cursor."""
+
+    def __init__(self, rows: list[tuple[object, ...]]) -> None:
+        self.cursor_instance = StubCursor(rows)
+
+    def cursor(self) -> StubCursor:
+        return self.cursor_instance
 
 
 def test_database_settings_reads_valid_postgresql_url() -> None:
@@ -24,6 +61,31 @@ def test_database_settings_reads_valid_postgresql_url() -> None:
 
     assert settings.url.endswith("/ngdp")
     assert "secret" not in repr(settings)
+
+
+def test_load_current_generation_returns_validated_analytical_data() -> None:
+    connection = StubConnection(
+        [("Hydro power generation", date(2025, 1, 1), Decimal("100.000"))]
+    )
+
+    data = load_current_generation(
+        connection,
+        provider="Statistics Norway",
+        table_id="14091",
+    )
+
+    assert connection.cursor_instance.parameters == ("Statistics Norway", "14091")
+    assert data.loc[0, "date"].isoformat() == "2025-01-01T00:00:00"
+    assert data.loc[0, "production_mwh"] == 100
+
+
+def test_load_current_generation_rejects_missing_snapshot() -> None:
+    with pytest.raises(DatabaseReadError, match="não contém"):
+        load_current_generation(
+            StubConnection([]),
+            provider="Statistics Norway",
+            table_id="14091",
+        )
 
 
 @pytest.mark.parametrize(

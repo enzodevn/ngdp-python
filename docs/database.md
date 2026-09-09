@@ -1,14 +1,15 @@
 # NGDP PostgreSQL foundation
 
-Sprint 07 introduces PostgreSQL as a durable analytical layer while preserving
-the validated CSV pipeline as the stable source of truth during the V2
-transition.
+Sprint 07 introduces PostgreSQL as a durable analytical layer. Sprint 08 adds a
+controlled read gateway while preserving the validated CSV pipeline as the
+stable source of truth during the V2 transition.
 
 ## Boundary
 
 The official Statistics Norway snapshot is still downloaded, verified and
 transformed before database synchronization. PostgreSQL never bypasses source
-validation and the dashboard does not depend on the database yet.
+validation. The CLI and dashboard can select it explicitly, but only through
+the parity gate documented in `docs/data-access.md`.
 
     Statistics Norway API
               |
@@ -20,6 +21,12 @@ validation and the dashboard does not depend on the database yet.
               |
               v
        PostgreSQL synchronization
+              |
+              v
+       exact parity gate
+              |
+              v
+       analytical consumers
 
 This boundary keeps V1 operational while the database layer is tested and
 adopted incrementally.
@@ -63,9 +70,10 @@ The synchronization is transactional and idempotent. Running the same
 validated snapshot again keeps one snapshot record and rebuilds its fact rows
 inside a single transaction.
 
-## Next adoption gate
+## Adoption gate
 
-Before the dashboard reads PostgreSQL, the database path must pass its
-integration test in CI and produce the same record count, period and aggregate
-values as the canonical CSV. Until that gate passes, CSV remains the runtime
-fallback.
+Before PostgreSQL data reaches analytics or the dashboard, it must pass its
+integration test and produce the same deterministic source-period-value
+fingerprint as the canonical CSV. The gate also reports record count, source
+count, coverage period and total production. CSV remains the default runtime
+backend while database-backed operation is evaluated in deployment.

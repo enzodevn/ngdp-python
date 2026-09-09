@@ -5,7 +5,7 @@ engineering and sustainability.
 
 The NGDP is a NEXUS system and is being developed incrementally. The current
 stage connects the validated Python data core to NGDP Web V1 and introduces a
-versioned PostgreSQL foundation without making the interface depend on it.
+controlled PostgreSQL read path protected by exact snapshot parity checks.
 
 ## Current status
 
@@ -31,10 +31,12 @@ versioned PostgreSQL foundation without making the interface depend on it.
 - Versioned PostgreSQL schema with source, snapshot, dimension and fact tables.
 - Transactional and idempotent synchronization of validated snapshots.
 - PostgreSQL integration test with a dedicated CI database.
+- Controlled analytical gateway for CSV and PostgreSQL backends.
+- Exact source-period-value parity verification before database-backed reads.
 
 ### In development
 
-- Controlled adoption of PostgreSQL by analytical consumers.
+- Evaluation of PostgreSQL-backed operation in the deployment environment.
 
 ### Planned
 
@@ -63,15 +65,20 @@ versioned PostgreSQL foundation without making the interface depend on it.
             src/data_cleaning.py
                     |
                     v
-    data_processed/norway_energy_cleaned.csv
-                    |
-          +---------+----------------+----------------+
-          |                          |                |
-          v                          v                v
-       main.py               src/dashboard.py    PostgreSQL
-          |                          |                |
-          v                          v                v
-    analytics/report          presenter + Web V1  history + SQL
+    data_processed/norway_energy_cleaned.csv ----+
+                                                   |
+    PostgreSQL current snapshot -------------------+
+                                                   |
+                                                   v
+                                         src/data_access.py
+                                                   |
+                                      +------------+------------+
+                                      |                         |
+                                      v                         v
+                                   main.py               src/dashboard.py
+                                      |                         |
+                                      v                         v
+                               analytics/report          presenter + Web V1
 
 Important modules:
 
@@ -81,6 +88,7 @@ Important modules:
 - src/provenance.py: source metadata and raw snapshot integrity verification.
 - src/ingestion.py: official API download, schema validation, comparison and
   recoverable snapshot update.
+- src/data_access.py: controlled backend selection and exact parity gate.
 - src/analytics.py: analytical calculations.
 - src/reporting.py: text report formatting and persistence.
 - src/visualization.py: CLI charts.
@@ -177,6 +185,21 @@ The database URL exists only in the process environment. `.env.example` is a
 credential-free reference; local `.env` files remain ignored. The full model,
 migration contract and adoption gate are documented in `docs/database.md`.
 
+Run analytics from PostgreSQL after verifying exact parity with the canonical
+CSV snapshot:
+
+    python main.py --data-backend postgresql --no-charts
+
+Synchronize and consume the database in one controlled execution:
+
+    python main.py --sync-database --data-backend postgresql --no-charts
+
+The Streamlit dashboard uses the same gateway. CSV is the safe default; set
+`NGDP_DATA_BACKEND=postgresql` in the dashboard process to select the database.
+Database failures or parity differences stop execution instead of triggering a
+silent fallback. The complete contract is documented in
+`docs/data-access.md`.
+
 ### Automated source refresh
 
 The GitHub Actions workflow in `.github/workflows/refresh-ssb-data.yml` checks
@@ -239,7 +262,8 @@ The tests cover:
 - pipeline integration, including an end-to-end rebuild, without graphical
   windows.
 - PostgreSQL settings, migration discovery and snapshot preparation;
-- idempotent relational loading against PostgreSQL in the dedicated CI job.
+- idempotent relational loading against PostgreSQL in the dedicated CI job;
+- PostgreSQL reads and exact parity enforcement before analytical adoption.
 
 ## Legacy files
 

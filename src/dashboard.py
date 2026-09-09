@@ -20,7 +20,8 @@ try:
         renewable_share,
         source_totals,
     )
-    from .data_loading import EnergyDataError, load_energy_data
+    from .data_access import DataAccessError, load_analytical_data
+    from .data_loading import EnergyDataError
     from .provenance import SourceMetadataError, load_source_metadata
 except ImportError:  # Streamlit executes this file as a script from project root.
     from src.analytics import calculate_statistics
@@ -37,7 +38,8 @@ except ImportError:  # Streamlit executes this file as a script from project roo
         renewable_share,
         source_totals,
     )
-    from src.data_loading import EnergyDataError, load_energy_data
+    from src.data_access import DataAccessError, load_analytical_data
+    from src.data_loading import EnergyDataError
     from src.provenance import SourceMetadataError, load_source_metadata
 
 
@@ -53,7 +55,7 @@ st.set_page_config(
 def load_dashboard_data():
     """Load validated energy data once per Streamlit cache cycle."""
 
-    return load_energy_data()
+    return load_analytical_data()
 
 
 @st.cache_data
@@ -102,10 +104,17 @@ def chart_theme(chart: alt.Chart) -> alt.Chart:
 
 
 try:
-    data = load_dashboard_data()
+    data_result = load_dashboard_data()
+    data = data_result.data
     source_metadata = load_dashboard_source()
     stylesheet = DASHBOARD_STYLE_PATH.read_text(encoding="utf-8")
-except (FileNotFoundError, EnergyDataError, SourceMetadataError, OSError) as exc:
+except (
+    DataAccessError,
+    FileNotFoundError,
+    EnergyDataError,
+    SourceMetadataError,
+    OSError,
+) as exc:
     st.error(f"Unable to load the validated dashboard assets: {exc}")
     st.stop()
 
@@ -120,6 +129,11 @@ available_sources = sorted(data["energy_source"].unique())
 retrieved_on = str(snapshot.get("retrieved_on") or "")
 retrieved_label = retrieved_on[:10] if len(retrieved_on) >= 10 else "Not recorded"
 hash_label = str(snapshot["raw_sha256"])[:12]
+backend_label = (
+    "PostgreSQL · parity verified"
+    if data_result.parity is not None
+    else "CSV · validated snapshot"
+)
 
 with st.sidebar:
     st.markdown("## Explore the dataset")
@@ -140,6 +154,7 @@ with st.sidebar:
         f"Official snapshot · {snapshot['period_start']} → {snapshot['period_end']}"
     )
     st.caption(f"SHA-256 · {hash_label}…")
+    st.caption(f"Analytical backend · {backend_label}")
 
 if not selected_sources:
     st.warning("Select at least one energy source to continue the analysis.")
@@ -155,10 +170,10 @@ change = latest_change(filtered)
 change_label = None if change is None else f"{change:+.1%} vs previous month"
 
 st.markdown(
-    """
+    f"""
     <div class="ngdp-topline">
       <span>NEXUS SYSTEM // NGDP</span>
-      <span class="ngdp-status">Validated snapshot online</span>
+      <span class="ngdp-status">{escape(backend_label)}</span>
     </div>
     """,
     unsafe_allow_html=True,
