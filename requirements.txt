@@ -1,6 +1,9 @@
 pandas==3.0.1
 psycopg[binary]==3.3.5
 altair==6.2.2
+fastapi==0.141.1
 matplotlib==3.10.8
+pydantic==2.13.5
 seaborn==0.13.2
 streamlit==1.58.0
+uvicorn==0.52.4

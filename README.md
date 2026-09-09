@@ -33,11 +33,13 @@ read path protected by exact snapshot parity checks.
 - PostgreSQL integration test with a dedicated CI database.
 - Controlled analytical gateway for CSV and PostgreSQL backends.
 - Exact source-period-value parity verification before database-backed reads.
+- Versioned read-only REST API foundation with FastAPI and Pydantic contracts.
 
 ### Planned
 
 - Evaluation of PostgreSQL-backed operation in a managed deployment.
 - Structured backend API when the interface requires it.
+- Authentication and authorization for protected API capabilities.
 - Logging and operational observability.
 
 ### Research
@@ -69,13 +71,13 @@ read path protected by exact snapshot parity checks.
                                                    v
                                          src/data_access.py
                                                    |
-                                      +------------+------------+
-                                      |                         |
-                                      v                         v
-                                   main.py               src/dashboard.py
-                                      |                         |
-                                      v                         v
-                               analytics/report          presenter + Web V1
+                              +------------+------------+------------+
+                              |                         |            |
+                              v                         v            v
+                           main.py               src/dashboard.py  src/api/app.py
+                              |                         |            |
+                              v                         v            v
+                       analytics/report          presenter + Web V1  REST / OpenAPI
 
 Important modules:
 
@@ -94,6 +96,7 @@ Important modules:
 - src/dashboard_presenter.py: testable filters and dashboard calculations.
 - src/dashboard.py: interactive NGDP Web V1 composition.
 - assets/dashboard.css: responsive NEXUS-aligned visual system and motion.
+- src/api/: versioned FastAPI routes, Pydantic contracts and application services.
 
 ## Dataset
 
@@ -220,6 +223,16 @@ Run analytics with interactive charts:
 Start the Streamlit dashboard:
 
     python -m streamlit run src/dashboard.py
+
+Start the NGDP V3 API foundation:
+
+    python -m uvicorn src.api.app:app --reload
+
+The health endpoint is available at `http://127.0.0.1:8000/health`, the first
+analytical contract at `http://127.0.0.1:8000/api/v1/energy/summary`, and the
+interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`. The API is
+currently read-only and does not include authentication or public hosting.
+The complete delivery boundary is documented in `docs/api.md`.
 
 Use the sidebar to combine energy sources and change the year window. The
 metrics, trend, energy mix, source totals and evidence table update together.
