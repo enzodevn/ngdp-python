@@ -3,11 +3,15 @@
 Energy data platform focused on Norwegian electricity production, data
 engineering and sustainability.
 
-The NGDP is a NEXUS system developed incrementally. NGDP V2 connects the
-validated Python data core to NGDP Web V1 and provides a controlled PostgreSQL
-read path protected by exact snapshot parity checks.
+The NGDP is a NEXUS system developed incrementally. NGDP V3 connects the
+validated Python data core to NGDP Web V1, provides a controlled PostgreSQL
+read path protected by exact snapshot parity checks, and exposes authenticated
+analytics through a versioned FastAPI contract.
 
 ## Current status
+
+Product version: `3.0.0`. The HTTP contract remains under `/api/v1`; product
+and API versions evolve independently.
 
 ### Implemented
 
@@ -39,7 +43,7 @@ read path protected by exact snapshot parity checks.
 ### Planned
 
 - Evaluation of PostgreSQL-backed operation in a managed deployment.
-- Structured backend API when the interface requires it.
+- Managed deployment of the authenticated analytical API.
 - Fine-grained authorization for future write capabilities and user roles.
 - Logging and operational observability.
 
@@ -51,6 +55,10 @@ read path protected by exact snapshot parity checks.
 - Quantum optimization experiments only as a future NGDP Labs initiative.
 
 ## Architecture
+
+The complete component map, trust boundaries and runtime flows are documented
+in `docs/architecture.md`. The safe handoff planned for NEXUS is documented in
+`docs/nexus-integration.md`.
 
     data_raw/norway_energy_raw.csv
     data_raw/source.json
@@ -97,7 +105,8 @@ Important modules:
 - src/dashboard_presenter.py: testable filters and dashboard calculations.
 - src/dashboard.py: interactive NGDP Web V1 composition.
 - assets/dashboard.css: responsive NEXUS-aligned visual system and motion.
-- src/api/: versioned FastAPI routes, Pydantic contracts and application services.
+- src/api/: versioned FastAPI routes, bearer authentication, Pydantic contracts
+  and application services.
 
 ## Dataset
 
@@ -277,6 +286,9 @@ The tests cover:
 - PostgreSQL settings, migration discovery and snapshot preparation;
 - idempotent relational loading against PostgreSQL in the dedicated CI job;
 - PostgreSQL reads and exact parity enforcement before analytical adoption.
+- public health reporting and centralized product-version metadata;
+- bearer authentication failure states and authenticated analytical access;
+- OpenAPI security declarations for protected routes.
 
 ## Legacy files
 

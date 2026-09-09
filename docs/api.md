@@ -4,6 +4,10 @@ NGDP V3 begins with a small read-only HTTP boundary. The API reuses the
 validated analytical gateway introduced in V2; it does not create a second
 data-loading path.
 
+The service reports product version `3.0.0` through FastAPI metadata and the
+health response. This is separate from API contract version `v1`, which remains
+encoded in analytical route paths.
+
 ## Current contract
 
 - `GET /health`: process readiness and API contract version.
@@ -14,6 +18,15 @@ data-loading path.
 CSV remains the safe default backend. PostgreSQL can be selected through the
 existing `NGDP_DATA_BACKEND` environment variable and must pass the same exact
 parity gate before its values reach an API response.
+
+The public health response identifies both version dimensions:
+
+    {
+      "status": "ok",
+      "service": "ngdp-api",
+      "service_version": "3.0.0",
+      "api_version": "v1"
+    }
 
 ## Run locally
 
