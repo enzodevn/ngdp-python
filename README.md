@@ -3,9 +3,9 @@
 Energy data platform focused on Norwegian electricity production, data
 engineering and sustainability.
 
-The NGDP is a NEXUS system and is being developed incrementally. The current
-stage connects the validated Python data core to NGDP Web V1 and introduces a
-controlled PostgreSQL read path protected by exact snapshot parity checks.
+The NGDP is a NEXUS system developed incrementally. NGDP V2 connects the
+validated Python data core to NGDP Web V1 and provides a controlled PostgreSQL
+read path protected by exact snapshot parity checks.
 
 ## Current status
 
@@ -34,12 +34,9 @@ controlled PostgreSQL read path protected by exact snapshot parity checks.
 - Controlled analytical gateway for CSV and PostgreSQL backends.
 - Exact source-period-value parity verification before database-backed reads.
 
-### In development
-
-- Evaluation of PostgreSQL-backed operation in the deployment environment.
-
 ### Planned
 
+- Evaluation of PostgreSQL-backed operation in a managed deployment.
 - Structured backend API when the interface requires it.
 - Logging and operational observability.
 
