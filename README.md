@@ -34,12 +34,13 @@ read path protected by exact snapshot parity checks.
 - Controlled analytical gateway for CSV and PostgreSQL backends.
 - Exact source-period-value parity verification before database-backed reads.
 - Versioned read-only REST API foundation with FastAPI and Pydantic contracts.
+- Environment-backed bearer authentication for protected analytical routes.
 
 ### Planned
 
 - Evaluation of PostgreSQL-backed operation in a managed deployment.
 - Structured backend API when the interface requires it.
-- Authentication and authorization for protected API capabilities.
+- Fine-grained authorization for future write capabilities and user roles.
 - Logging and operational observability.
 
 ### Research
@@ -224,15 +225,17 @@ Start the Streamlit dashboard:
 
     python -m streamlit run src/dashboard.py
 
-Start the NGDP V3 API foundation:
+Create a strong local API token and start the NGDP V3 API:
 
+    $env:NGDP_API_TOKEN = python -c "import secrets; print(secrets.token_urlsafe(48))"
     python -m uvicorn src.api.app:app --reload
 
 The health endpoint is available at `http://127.0.0.1:8000/health`, the first
 analytical contract at `http://127.0.0.1:8000/api/v1/energy/summary`, and the
-interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`. The API is
-currently read-only and does not include authentication or public hosting.
-The complete delivery boundary is documented in `docs/api.md`.
+interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`. The
+analytical route requires the environment-backed bearer token; `/health`
+remains public for operational checks. The API is read-only and is not publicly
+hosted. The complete delivery boundary is documented in `docs/api.md`.
 
 Use the sidebar to combine energy sources and change the year window. The
 metrics, trend, energy mix, source totals and evidence table update together.
