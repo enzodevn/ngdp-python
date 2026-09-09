@@ -1,7 +1,8 @@
-"""FastAPI entry point for the first NGDP V3 API slice."""
+"""FastAPI entry point for the NGDP V3 analytical API."""
 
 from fastapi import Depends, FastAPI, HTTPException, status
 
+from .. import __version__
 from ..data_access import DataAccessError
 from .auth import require_api_token
 from .models import EnergySummaryResponse, HealthResponse
@@ -10,7 +11,7 @@ from .service import build_energy_summary
 app = FastAPI(
     title="NGDP API",
     description="Read-only access to validated Norwegian energy analytics.",
-    version="0.2.0",
+    version=__version__,
 )
 
 

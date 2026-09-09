@@ -3,6 +3,7 @@
 from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 
+from src import __version__
 from src.api.app import app
 from src.api.auth import API_TOKEN_ENV_VAR
 
@@ -17,8 +18,13 @@ def test_health_endpoint_exposes_versioned_service_contract() -> None:
     assert response.json() == {
         "status": "ok",
         "service": "ngdp-api",
+        "service_version": __version__,
         "api_version": "v1",
     }
+
+
+def test_openapi_metadata_uses_the_product_version() -> None:
+    assert app.version == __version__
 
 
 def test_health_endpoint_remains_public_when_authentication_is_unset(

@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .. import __version__
+
 
 class HealthResponse(BaseModel):
     """Small operational contract used by health checks."""
@@ -12,6 +14,7 @@ class HealthResponse(BaseModel):
 
     status: Literal["ok"] = "ok"
     service: Literal["ngdp-api"] = "ngdp-api"
+    service_version: str = __version__
     api_version: Literal["v1"] = "v1"
 
 

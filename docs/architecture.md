@@ -1,0 +1,124 @@
+# NGDP V3 architecture
+
+## Purpose
+
+NGDP V3 is a read-oriented Norwegian energy data platform. It preserves an
+official Statistics Norway snapshot, validates every transformation, offers a
+controlled CSV or PostgreSQL analytical path, and exposes the resulting
+indicators through a dashboard, command-line workflow and authenticated API.
+
+## System map
+
+```text
+Statistics Norway PxWebApi v2
+              |
+              v
+      ingestion + schema gate
+              |
+              v
+ raw snapshot + provenance metadata
+              |
+              v
+ cleaning + canonical validation
+              |
+              v
+     processed CSV snapshot
+              |
+       +------+------+
+       |             |
+       v             v
+   CSV gateway   PostgreSQL sync
+       |             |
+       +------v------+
+              |
+      exact parity gate
+              |
+       +------+------+----------------+
+       |             |                |
+       v             v                v
+      CLI      Streamlit Web V1   FastAPI /api/v1
+                                      |
+                                      v
+                              HTTP bearer boundary
+```
+
+## Component responsibilities
+
+- `src/ingestion.py` validates provider identity, table dimensions, units and
+  update shape before a source change can be applied.
+- `src/provenance.py` binds the raw snapshot to its origin and content hash.
+- `src/data_cleaning.py` transforms the provider table into the canonical long
+  format.
+- `src/data_loading.py` validates the processed analytical contract.
+- `src/database.py` owns migrations and transactional PostgreSQL synchronization.
+- `src/data_access.py` selects CSV or PostgreSQL and blocks database reads when
+  exact source-period-value parity is not proven.
+- `src/analytics.py` contains reusable calculations independent of presentation.
+- `src/dashboard_presenter.py` prepares tested dashboard views and filters.
+- `src/dashboard.py` composes the interactive Streamlit interface.
+- `src/api/service.py` adapts trusted analytics to HTTP response contracts.
+- `src/api/models.py` defines immutable Pydantic response models.
+- `src/api/auth.py` protects analytical routes with an environment-backed token.
+- `src/api/app.py` composes the FastAPI application and operational health route.
+
+## Trust boundaries
+
+```text
+external provider
+      |
+      v
+schema + provenance validation
+      |
+      v
+trusted versioned snapshot
+      |
+      v
+data validation + database parity
+      |
+      v
+trusted analytical gateway
+      |
+      v
+bearer-authenticated API response
+```
+
+Unexpected source structure, missing provenance, invalid processed data,
+database drift and absent authentication all fail closed. The application does
+not silently substitute another backend or expose the configured token.
+
+## Runtime configuration
+
+| Variable | Responsibility | Default |
+| --- | --- | --- |
+| `NGDP_DATA_BACKEND` | Select `csv` or `postgresql` reads | `csv` |
+| `NGDP_DATABASE_URL` | Connect database synchronization and reads | none |
+| `NGDP_API_TOKEN` | Authorize protected analytical requests | none |
+
+Configuration values remain in the process environment. Real credentials are
+never stored in the repository.
+
+## Version model
+
+- Product version: `3.0.0`, defined once in `src/__init__.py`.
+- API contract version: `v1`, retained in `/api/v1` paths and health metadata.
+- Database schema version: managed independently through numbered SQL migrations.
+- Dataset version: represented by source timestamps and snapshot hashes.
+
+These versions describe different compatibility boundaries and should not be
+forced to advance together.
+
+## Operational states
+
+- `200`: the requested public or authenticated contract completed successfully.
+- `401`: bearer credentials are absent or invalid.
+- `503`: authentication is not configured or the validated analytical snapshot
+  is unavailable.
+
+`GET /health` remains public so infrastructure can check service readiness.
+Analytical data remains protected.
+
+## Current deployment boundary
+
+The V3 system is validated locally and in GitHub Actions. Public hosting,
+managed PostgreSQL, observability infrastructure, user accounts, roles and write
+operations are intentionally deferred to later releases.
