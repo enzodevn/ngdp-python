@@ -1,8 +1,8 @@
 # NGDP PostgreSQL foundation
 
-Sprint 07 introduces PostgreSQL as a durable analytical layer. Sprint 08 adds a
-controlled read gateway while preserving the validated CSV pipeline as the
-stable source of truth during the V2 transition.
+Sprint 07 introduced PostgreSQL as a durable analytical layer. Sprint 08 added
+a controlled read gateway while preserving the validated CSV pipeline as the
+stable default for the completed V2 scope.
 
 ## Boundary
 
@@ -28,8 +28,8 @@ the parity gate documented in `docs/data-access.md`.
               v
        analytical consumers
 
-This boundary keeps V1 operational while the database layer is tested and
-adopted incrementally.
+This boundary keeps the analytical runtime recoverable while the database
+layer can be adopted incrementally.
 
 ## Relational model
 
@@ -76,4 +76,5 @@ Before PostgreSQL data reaches analytics or the dashboard, it must pass its
 integration test and produce the same deterministic source-period-value
 fingerprint as the canonical CSV. The gate also reports record count, source
 count, coverage period and total production. CSV remains the default runtime
-backend while database-backed operation is evaluated in deployment.
+backend; managed PostgreSQL deployment belongs to a future infrastructure
+stage.
