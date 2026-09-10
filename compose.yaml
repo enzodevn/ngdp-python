@@ -1,0 +1,57 @@
+name: ngdp
+
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${NGDP_POSTGRES_DB:-ngdp}
+      POSTGRES_USER: ${NGDP_POSTGRES_USER:-ngdp}
+      POSTGRES_PASSWORD: ${NGDP_POSTGRES_PASSWORD:?Set NGDP_POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+    volumes:
+      - ngdp-postgres-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NGDP_API_TOKEN: ${NGDP_API_TOKEN:?Set NGDP_API_TOKEN in .env}
+      NGDP_DATA_BACKEND: ${NGDP_DATA_BACKEND:-csv}
+      NGDP_DATABASE_URL: postgresql://${NGDP_POSTGRES_USER:-ngdp}:${NGDP_POSTGRES_PASSWORD}@database:5432/${NGDP_POSTGRES_DB:-ngdp}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:${NGDP_API_PORT:-8000}:8000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    init: true
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+      - /opt/ngdp/outputs
+
+volumes:
+  ngdp-postgres-data:

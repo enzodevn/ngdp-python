@@ -4,6 +4,27 @@ This file records significant NGDP product changes. Product releases use
 semantic version tags such as `v3.0.0`; API and database contracts are versioned
 independently.
 
+## Unreleased
+
+### Added
+
+- Non-root API image with a dedicated pinned runtime dependency contract.
+- Docker Compose topology for the API and an internal PostgreSQL 17 service.
+- Container health checks and persistent local database storage.
+- Container operations guide for startup, synchronization and shutdown.
+
+### Security
+
+- API exposure is restricted to the host loopback interface.
+- The API container drops Linux capabilities, prevents privilege escalation and
+  uses a read-only filesystem.
+- Runtime credentials remain outside the image and versioned configuration.
+
+### Quality
+
+- Continuous integration validates the Compose model, builds the image and
+  verifies the live health contract.
+
 ## 3.0.0 - 2026-09-09
 
 ### Added

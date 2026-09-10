@@ -60,6 +60,8 @@ Statistics Norway PxWebApi v2
 - `src/api/models.py` defines immutable Pydantic response models.
 - `src/api/auth.py` protects analytical routes with an environment-backed token.
 - `src/api/app.py` composes the FastAPI application and operational health route.
+- `Dockerfile` packages the API in a non-root Python runtime.
+- `compose.yaml` defines the local API, PostgreSQL and persistent-volume topology.
 
 ## Trust boundaries
 
@@ -93,6 +95,10 @@ not silently substitute another backend or expose the configured token.
 | `NGDP_DATA_BACKEND` | Select `csv` or `postgresql` reads | `csv` |
 | `NGDP_DATABASE_URL` | Connect database synchronization and reads | none |
 | `NGDP_API_TOKEN` | Authorize protected analytical requests | none |
+| `NGDP_API_PORT` | Select the loopback port published by Compose | `8000` |
+| `NGDP_POSTGRES_DB` | Name the local Compose database | `ngdp` |
+| `NGDP_POSTGRES_USER` | Name the local Compose database user | `ngdp` |
+| `NGDP_POSTGRES_PASSWORD` | Authenticate the local Compose database | none |
 
 Configuration values remain in the process environment. Real credentials are
 never stored in the repository.
@@ -119,6 +125,8 @@ Analytical data remains protected.
 
 ## Current deployment boundary
 
-The V3 system is validated locally and in GitHub Actions. Public hosting,
-managed PostgreSQL, observability infrastructure, user accounts, roles and write
-operations are intentionally deferred to later releases.
+The V3 application contracts are validated locally and in GitHub Actions. The
+first V4 infrastructure layer adds a reproducible local container boundary and
+continuous image verification. Public hosting, managed PostgreSQL,
+observability infrastructure, user accounts, roles and write operations remain
+intentionally deferred to later releases.
