@@ -27,6 +27,7 @@ services:
       NGDP_API_TOKEN: ${NGDP_API_TOKEN:?Set NGDP_API_TOKEN in .env}
       NGDP_DATA_BACKEND: ${NGDP_DATA_BACKEND:-csv}
       NGDP_DATABASE_URL: postgresql://${NGDP_POSTGRES_USER:-ngdp}:${NGDP_POSTGRES_PASSWORD}@database:5432/${NGDP_POSTGRES_DB:-ngdp}
+      NGDP_LOG_LEVEL: ${NGDP_LOG_LEVEL:-INFO}
     depends_on:
       database:
         condition: service_healthy
@@ -37,7 +38,7 @@ services:
         - CMD
         - python
         - -c
-        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)
       interval: 10s
       timeout: 5s
       retries: 5

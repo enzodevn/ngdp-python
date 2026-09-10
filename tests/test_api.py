@@ -1,11 +1,14 @@
 """HTTP contract tests for the NGDP V3 API foundation."""
 
+from uuid import UUID
+
 from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 
 from src import __version__
 from src.api.app import app
 from src.api.auth import API_TOKEN_ENV_VAR
+from src.data_access import DATA_BACKEND_ENV_VAR
 
 client = TestClient(app)
 TEST_API_TOKEN = "ngdp-test-token-with-at-least-32-characters"
@@ -21,6 +24,56 @@ def test_health_endpoint_exposes_versioned_service_contract() -> None:
         "service_version": __version__,
         "api_version": "v1",
     }
+
+
+def test_liveness_endpoint_exposes_the_process_contract() -> None:
+    response = client.get("/health/live")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "service": "ngdp-api",
+        "service_version": __version__,
+        "api_version": "v1",
+    }
+
+
+def test_readiness_endpoint_validates_the_active_backend(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(DATA_BACKEND_ENV_VAR, raising=False)
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ready",
+        "service": "ngdp-api",
+        "service_version": __version__,
+        "api_version": "v1",
+        "backend": "csv",
+    }
+
+
+def test_readiness_endpoint_fails_closed_for_an_invalid_backend(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(DATA_BACKEND_ENV_VAR, "unsupported")
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "The configured analytical backend is not ready."
+    }
+
+
+def test_api_responses_include_an_internal_request_identifier() -> None:
+    response = client.get("/health/live")
+
+    assert response.status_code == 200
+    request_id = response.headers["x-request-id"]
+    assert UUID(request_id).hex == request_id
 
 
 def test_openapi_metadata_uses_the_product_version() -> None:
@@ -100,6 +153,8 @@ def test_openapi_schema_documents_the_versioned_summary() -> None:
 
     assert response.status_code == 200
     schema = response.json()
+    assert "/health/live" in schema["paths"]
+    assert "/health/ready" in schema["paths"]
     assert "/api/v1/energy/summary" in schema["paths"]
     security_schemes = schema["components"]["securitySchemes"]
     assert any(

@@ -59,10 +59,11 @@ docker compose up --build --detach
 docker compose ps
 ```
 
-Verify the public operational endpoint:
+Verify process liveness and dependency readiness:
 
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:8000/health/live
+Invoke-RestMethod http://127.0.0.1:8000/health/ready
 ```
 
 The OpenAPI interface is available at `http://127.0.0.1:8000/docs`. Protected
@@ -107,9 +108,11 @@ must be an explicit decision. It is not part of the normal shutdown procedure.
 - Credentials are injected at runtime and are not baked into the image.
 - The database is reachable only through the internal Compose network.
 - The container image includes only API runtime dependencies and required data.
+- Structured request logs omit authorization headers, tokens and query strings.
 
 ## Continuous validation
 
-The quality workflow builds the API image and starts it with an ephemeral token.
-The workflow accepts the image only when the public health contract responds
-successfully. PostgreSQL integration continues to run in its dedicated job.
+The quality workflow builds the API image, synchronizes the validated snapshot,
+starts the PostgreSQL-backed API and accepts the environment only when the
+readiness contract confirms the selected backend. PostgreSQL integration also
+continues to run in its dedicated job.
