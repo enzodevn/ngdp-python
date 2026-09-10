@@ -31,7 +31,9 @@ not an acceptable integration design.
 
 | NGDP route | Access | Intended NEXUS use |
 | --- | --- | --- |
-| `GET /health` | Public | Operational state and API identity |
+| `GET /health/live` | Public | Process state and API identity |
+| `GET /health/ready` | Public | Active-backend operational state |
+| `GET /health` | Public | Compatible process-health contract |
 | `GET /api/v1/energy/summary` | Bearer token | Validated headline indicators |
 | `GET /openapi.json` | Public | Machine-readable interface contract |
 

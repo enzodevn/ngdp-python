@@ -12,6 +12,8 @@ independently.
 - Docker Compose topology for the API and an internal PostgreSQL 17 service.
 - Container health checks and persistent local database storage.
 - Container operations guide for startup, synchronization and shutdown.
+- Separate process-liveness and backend-readiness API contracts.
+- Structured request logs with correlation identifiers and duration.
 
 ### Security
 
@@ -19,11 +21,12 @@ independently.
 - The API container drops Linux capabilities, prevents privilege escalation and
   uses a read-only filesystem.
 - Runtime credentials remain outside the image and versioned configuration.
+- Operational logs exclude authorization headers, tokens and query strings.
 
 ### Quality
 
-- Continuous integration validates the Compose model, builds the image and
-  verifies the live health contract.
+- Continuous integration validates the Compose model, synchronizes PostgreSQL
+  and verifies the database-backed readiness contract.
 
 ## 3.0.0 - 2026-09-09
 

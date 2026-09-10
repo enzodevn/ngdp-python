@@ -42,13 +42,15 @@ and API versions evolve independently.
 - Reproducible non-root API container with an explicit health contract.
 - Local Docker Compose environment with an internal PostgreSQL 17 service.
 - Container image verification in the continuous quality gate.
+- Separate liveness and backend-aware readiness contracts.
+- Structured request logs with correlation identifiers and duration.
 
 ### Planned
 
 - Evaluation of PostgreSQL-backed operation in a managed deployment.
 - Managed deployment of the authenticated analytical API.
 - Fine-grained authorization for future write capabilities and user roles.
-- Logging and operational observability.
+- Centralized log aggregation, service metrics and alerting.
 - Managed container deployment after the local infrastructure contract is stable.
 
 ### Research
@@ -111,6 +113,8 @@ Important modules:
 - assets/dashboard.css: responsive NEXUS-aligned visual system and motion.
 - src/api/: versioned FastAPI routes, bearer authentication, Pydantic contracts
   and application services.
+- src/api/observability.py: structured request logging, correlation identifiers
+  and runtime log-level configuration.
 - Dockerfile: minimal non-root runtime for the authenticated API.
 - compose.yaml: local API and PostgreSQL topology with health checks and
   persistent database storage.
@@ -247,12 +251,13 @@ Create a strong local API token and start the NGDP V3 API:
     $env:NGDP_API_TOKEN = python -c "import secrets; print(secrets.token_urlsafe(48))"
     python -m uvicorn src.api.app:app --reload
 
-The health endpoint is available at `http://127.0.0.1:8000/health`, the first
-analytical contract at `http://127.0.0.1:8000/api/v1/energy/summary`, and the
-interactive OpenAPI documentation at `http://127.0.0.1:8000/docs`. The
-analytical route requires the environment-backed bearer token; `/health`
-remains public for operational checks. The API is read-only and is not publicly
-hosted. The complete delivery boundary is documented in `docs/api.md`.
+Process liveness is available at `http://127.0.0.1:8000/health/live`, dependency
+readiness at `http://127.0.0.1:8000/health/ready`, the first analytical contract
+at `http://127.0.0.1:8000/api/v1/energy/summary`, and the interactive OpenAPI
+documentation at `http://127.0.0.1:8000/docs`. Operational routes remain public;
+the analytical route requires the environment-backed bearer token. The API is
+read-only and is not publicly hosted. The complete delivery boundary is
+documented in `docs/api.md`.
 
 ### Container environment
 
@@ -311,6 +316,8 @@ The tests cover:
 - idempotent relational loading against PostgreSQL in the dedicated CI job;
 - PostgreSQL reads and exact parity enforcement before analytical adoption.
 - public health reporting and centralized product-version metadata;
+- process liveness, backend readiness and request correlation;
+- safe structured logging without request credentials or query strings;
 - bearer authentication failure states and authenticated analytical access;
 - OpenAPI security declarations for protected routes.
 - API image construction and live container health verification.

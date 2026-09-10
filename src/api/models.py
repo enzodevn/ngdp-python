@@ -18,6 +18,18 @@ class HealthResponse(BaseModel):
     api_version: Literal["v1"] = "v1"
 
 
+class ReadinessResponse(BaseModel):
+    """Operational contract proving that the active data backend is usable."""
+
+    model_config = ConfigDict(frozen=True)
+
+    status: Literal["ready"] = "ready"
+    service: Literal["ngdp-api"] = "ngdp-api"
+    service_version: str = __version__
+    api_version: Literal["v1"] = "v1"
+    backend: Literal["csv", "postgresql"]
+
+
 class EnergySummaryResponse(BaseModel):
     """Validated analytical summary for the active NGDP snapshot."""
 

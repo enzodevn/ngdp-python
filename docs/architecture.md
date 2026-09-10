@@ -1,4 +1,4 @@
-# NGDP V3 architecture
+# NGDP system architecture
 
 ## Purpose
 
@@ -60,6 +60,8 @@ Statistics Norway PxWebApi v2
 - `src/api/models.py` defines immutable Pydantic response models.
 - `src/api/auth.py` protects analytical routes with an environment-backed token.
 - `src/api/app.py` composes the FastAPI application and operational health route.
+- `src/api/observability.py` emits safe structured request events and correlation
+  identifiers without recording credentials or query strings.
 - `Dockerfile` packages the API in a non-root Python runtime.
 - `compose.yaml` defines the local API, PostgreSQL and persistent-volume topology.
 
@@ -96,6 +98,7 @@ not silently substitute another backend or expose the configured token.
 | `NGDP_DATABASE_URL` | Connect database synchronization and reads | none |
 | `NGDP_API_TOKEN` | Authorize protected analytical requests | none |
 | `NGDP_API_PORT` | Select the loopback port published by Compose | `8000` |
+| `NGDP_LOG_LEVEL` | Select structured application-log severity | `INFO` |
 | `NGDP_POSTGRES_DB` | Name the local Compose database | `ngdp` |
 | `NGDP_POSTGRES_USER` | Name the local Compose database user | `ngdp` |
 | `NGDP_POSTGRES_PASSWORD` | Authenticate the local Compose database | none |
@@ -120,13 +123,16 @@ forced to advance together.
 - `503`: authentication is not configured or the validated analytical snapshot
   is unavailable.
 
-`GET /health` remains public so infrastructure can check service readiness.
-Analytical data remains protected.
+`GET /health/live` proves that the API process can respond. `GET /health/ready`
+validates the selected analytical backend and, for PostgreSQL, the existing
+exact parity gate. `GET /health` remains as the original compatible
+process-health contract. Operational routes are public; analytical data remains
+protected.
 
 ## Current deployment boundary
 
 The V3 application contracts are validated locally and in GitHub Actions. The
-first V4 infrastructure layer adds a reproducible local container boundary and
-continuous image verification. Public hosting, managed PostgreSQL,
-observability infrastructure, user accounts, roles and write operations remain
+V4 infrastructure layer adds a reproducible container boundary, backend-aware
+readiness and structured application logs. Public hosting, managed PostgreSQL,
+centralized telemetry, user accounts, roles and write operations remain
 intentionally deferred to later releases.
