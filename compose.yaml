@@ -51,7 +51,7 @@ services:
       - ALL
     tmpfs:
       - /tmp
-      - /opt/ngdp/outputs
+      - /opt/ngdp/outputs:uid=10001,gid=10001,mode=0750
 
 volumes:
   ngdp-postgres-data:
