@@ -141,13 +141,7 @@ jobs:
             --env NGDP_API_TOKEN=ci-only-token-with-at-least-32-characters \
             ngdp-api:test
 
-          cleanup() {
-            docker logs ngdp-api-test || true
-            docker rm --force ngdp-api-test || true
-          }
-          trap cleanup EXIT
-
-          for attempt in {1..30}; do
+          for _ in {1..30}; do
             if curl --fail --silent http://127.0.0.1:8000/health \
               | python -c "import json, sys; assert json.load(sys.stdin)['status'] == 'ok'"; then
               exit 0
@@ -157,3 +151,10 @@ jobs:
 
           echo "The API container did not become healthy." >&2
           exit 1
+
+      - name: Collect container logs and remove the test container
+        if: always()
+        shell: bash
+        run: |
+          docker logs ngdp-api-test || true
+          docker rm --force ngdp-api-test || true
