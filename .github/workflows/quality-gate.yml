@@ -113,3 +113,48 @@ jobs:
         env:
           NGDP_TEST_DATABASE_URL: postgresql://ngdp:ngdp_test_password@localhost:5432/ngdp_test
         run: python -m pytest -p no:cacheprovider tests/test_database_integration.py
+
+  container:
+    name: API container
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Validate the local container topology
+        env:
+          NGDP_API_TOKEN: ci-only-token-with-at-least-32-characters
+          NGDP_POSTGRES_PASSWORD: ci-only-database-password
+        run: docker compose config --quiet
+
+      - name: Build the API image
+        run: docker build --tag ngdp-api:test .
+
+      - name: Verify the container health contract
+        shell: bash
+        run: |
+          docker run --detach \
+            --name ngdp-api-test \
+            --publish 127.0.0.1:8000:8000 \
+            --env NGDP_API_TOKEN=ci-only-token-with-at-least-32-characters \
+            ngdp-api:test
+
+          for _ in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/health \
+              | python -c "import json, sys; assert json.load(sys.stdin)['status'] == 'ok'"; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "The API container did not become healthy." >&2
+          exit 1
+
+      - name: Collect container logs and remove the test container
+        if: always()
+        shell: bash
+        run: |
+          docker logs ngdp-api-test || true
+          docker rm --force ngdp-api-test || true

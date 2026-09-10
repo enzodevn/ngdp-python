@@ -39,6 +39,9 @@ and API versions evolve independently.
 - Exact source-period-value parity verification before database-backed reads.
 - Versioned read-only REST API foundation with FastAPI and Pydantic contracts.
 - Environment-backed bearer authentication for protected analytical routes.
+- Reproducible non-root API container with an explicit health contract.
+- Local Docker Compose environment with an internal PostgreSQL 17 service.
+- Container image verification in the continuous quality gate.
 
 ### Planned
 
@@ -46,6 +49,7 @@ and API versions evolve independently.
 - Managed deployment of the authenticated analytical API.
 - Fine-grained authorization for future write capabilities and user roles.
 - Logging and operational observability.
+- Managed container deployment after the local infrastructure contract is stable.
 
 ### Research
 
@@ -107,6 +111,10 @@ Important modules:
 - assets/dashboard.css: responsive NEXUS-aligned visual system and motion.
 - src/api/: versioned FastAPI routes, bearer authentication, Pydantic contracts
   and application services.
+- Dockerfile: minimal non-root runtime for the authenticated API.
+- compose.yaml: local API and PostgreSQL topology with health checks and
+  persistent database storage.
+- docs/containers.md: container operation and security boundaries.
 
 ## Dataset
 
@@ -246,6 +254,22 @@ analytical route requires the environment-backed bearer token; `/health`
 remains public for operational checks. The API is read-only and is not publicly
 hosted. The complete delivery boundary is documented in `docs/api.md`.
 
+### Container environment
+
+The first NGDP V4 infrastructure layer packages the API and PostgreSQL into a
+reproducible local environment without changing the analytical contracts. The
+API runs as an unprivileged user, exposes only the loopback interface and keeps
+credentials outside the image.
+
+After installing Docker Desktop, create a local `.env` from `.env.example`,
+replace its placeholder secrets and run:
+
+    docker compose up --build --detach
+    docker compose ps
+
+The complete startup, PostgreSQL synchronization and shutdown flow is documented
+in `docs/containers.md`.
+
 Use the sidebar to combine energy sources and change the year window. The
 metrics, trend, energy mix, source totals and evidence table update together.
 The interface reads only the validated local snapshot and links back to the
@@ -289,6 +313,7 @@ The tests cover:
 - public health reporting and centralized product-version metadata;
 - bearer authentication failure states and authenticated analytical access;
 - OpenAPI security declarations for protected routes.
+- API image construction and live container health verification.
 
 ## Legacy files
 
